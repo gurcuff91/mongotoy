@@ -165,6 +165,24 @@ class BaseDoc(abc.ABC, metaclass=BaseDocMeta):
 
         return indexes
     
+    def __getitem__(self, key):
+        field = self.__fields__.get(key)
+        if not field:
+            raise DocumentError(f'Field {key} not found or not declared yet')
+        return field.__get__(self, self.__class__)
+    
+    def __setitem__(self, key, item):
+        field = self.__fields__.get(key)
+        if not field:
+            raise DocumentError(f'Field {key} not found or not declared yet')
+        field.__set__(self, item)
+    
+    def __delitem__(self, key):
+        field = self.__fields__.get(key)
+        if not field:
+            raise DocumentError(f'Field {key} not found or not declared yet')
+        field.__delete__(self)
+    
     def dump_bson(self, by_alias: bool = True) -> bson.SON:
         data = {}
         for field in self.__fields__.values():
