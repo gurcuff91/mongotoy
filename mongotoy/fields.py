@@ -293,7 +293,7 @@ class Field:
 
         """
         if not instance:
-            return FieldProxy()
+            return FieldProxy(self)
         return instance.__data__.get(self.name, EmptyValue)
 
     def __set__(self, instance, value):
@@ -375,15 +375,153 @@ class FieldProxy:
     Proxy class for fields.
     """
 
-    def name(self) -> str:
+    # noinspection PyShadowingNames
+    def __init__(self, field: Field, parent: 'FieldProxy' = None):
+        self._field = field
+        self._parent = parent
+
+    @property
+    def _alias(self) -> str:
         """
-        Get the name of the field.
+        Get the alias of the field, considering the parent's alias if present.
 
         Returns:
-            str: The name of the field.
-
+            str: The alias of the field.
         """
-        pass
+        if self._parent:
+            return f'{self._parent._alias}.{self.field.alias}'
+        return self._field.alias
+
+    def __str__(self):
+        """
+        Returns the string representation of the field's alias.
+
+        Returns:
+            str: The string representation of the field's alias.
+        """
+        return self._alias
+
+    def __pos__(self):
+        """
+        Represents the ascending ordering of the field.
+
+        Returns:
+            Q: Query object representing ascending order by the field.
+        """
+        return Asc(self._alias)
+
+    def __neg__(self):
+        """
+        Represents the descending ordering of the field.
+
+        Returns:
+            Q: Query object representing descending order by the field.
+        """
+        return Desc(self._alias)
+
+    def __eq__(self, other):
+        """
+        Represents equality comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing equality comparison.
+        """
+        return Q._eq(self._alias, other)
+
+    def __ne__(self, other):
+        """
+        Represents inequality comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing inequality comparison.
+        """
+        return Q._ne(self._alias, other)
+
+    def __gt__(self, other):
+        """
+        Represents greater-than comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing greater-than comparison.
+        """
+        return Q._gt(self._alias, other)
+
+    def __ge__(self, other):
+        """
+        Represents greater-than-or-equal-to comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing greater-than-or-equal-to comparison.
+        """
+        return Q._gte(self._alias, other)
+
+    def __lt__(self, other):
+        """
+        Represents less-than comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing less-than comparison.
+        """
+        return Q._lt(self._alias, other)
+
+    def __le__(self, other):
+        """
+        Represents less-than-or-equal-to comparison of the field.
+
+        Args:
+            other: The value or field to compare.
+
+        Returns:
+            Q: Query object representing less-than-or-equal-to comparison.
+        """
+        return Q._lte(self._alias, other)
+
+    def __getattr__(self, item):
+        """
+        Allows accessing nested fields using dot notation.
+
+        Args:
+            item (str): The name of the nested field.
+
+        Returns:
+            FieldProxy: The FieldProxy instance for the nested field.
+
+        Raises:
+            FieldError: If the nested field is not found in the document.
+        """
+        # Unwrap ListMapper
+        mapper = self._field.mapper
+        if isinstance(mapper, ListMapper):
+            mapper = mapper.mapper
+        # Unwrap EmbeddedDocumentMapper or ReferencedDocumentMapper
+        if isinstance(mapper, (EmbeddedDocumentMapper, ReferencedDocumentMapper)):
+            mapper = mapper.document_cls
+
+        try:
+            getattr(mapper.__bind__, item)
+        except AttributeError as e:
+            # noinspection PyProtectedMember
+            raise AttributeError(f'[{self._field._owner.__name__}.{self._alias}] {str(e)}') from None
+
+        return FieldProxy(
+            field=mapper.__fields__[item],
+            parent=self
+        )
 
 
 _MAPPERS_REG = {}
@@ -409,7 +547,9 @@ class MapperMeta(abc.ABCMeta):
 
         """
         _cls = super().__new__(mcls, name, bases, namespace)
-        _MAPPERS_REG[kwargs.get('bind', _cls)] = _cls
+        _cls.__bind__ = kwargs.get('bind', _cls)
+        _MAPPERS_REG[_cls.__bind__] = _cls
+
         return _cls
 
 
