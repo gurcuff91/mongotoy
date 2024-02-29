@@ -131,14 +131,12 @@ class Field:
 
     # Method for building a mapper based on annotations
     @classmethod
-    def _build_mapper(cls, mapper_bind: typing.Type, field_info: dict, mapper_params: dict, **options) -> 'Mapper':
+    def _build_mapper(cls, mapper_bind: typing.Type, **options) -> 'Mapper':
         """
         Build a data mapper based on annotations.
 
         Args:
             mapper_bind (Type): Type annotation for the mapper.
-            field_info (dict): Information about the field.
-            mapper_params (dict): Parameters for the mapper.
             **options: Additional options.
 
         Returns:
@@ -147,9 +145,11 @@ class Field:
         Raises:
             TypeError: If the mapper type is not recognized.
         """
+        from mongotoy import documents
+
         # Simple type annotation
         if not typing.get_args(mapper_bind):
-            from mongotoy import documents
+            mapper_params = {}
 
             # Check if it's a document type
             if isinstance(mapper_bind, (typing.ForwardRef, str)) or issubclass(mapper_bind, documents.BaseDocument):
@@ -161,9 +161,9 @@ class Field:
                 mapper_bind = EmbeddedDocumentMapper
 
                 # If it's a document reference
-                if field_info.get('type') == 'reference':
-                    mapper_params['ref_field'] = field_info.get('ref_field')
-                    mapper_params['key_name'] = field_info.get('key_name')
+                if options.get('type') == 'reference':
+                    mapper_params['ref_field'] = options.get('ref_field')
+                    mapper_params['key_name'] = options.get('key_name')
                     mapper_params['is_many'] = options.get('is_many', False)
                     mapper_bind = ReferencedDocumentMapper
 
@@ -185,12 +185,13 @@ class Field:
 
         # Check for nullable type
         if type_origin in (typing.Union, types.UnionType) and len(type_args) > 1 and type_args[1] is types.NoneType:
-            field_info['nullable'] = True
-            return cls._build_mapper(mapper_bind, field_info, mapper_params)
+            options['nullable'] = True
+            return cls._build_mapper(mapper_bind, **options)
 
         # Check for list type
         if type_origin is list:
-            return cls._build_mapper(mapper_bind, field_info, mapper_params, is_many=True)
+            options['is_many'] = True
+            return cls._build_mapper(mapper_bind, **options)
 
         raise TypeError(f'Invalid outer annotation {type_origin}, allowed are [{list}, {typing.Optional}]')
 
@@ -210,8 +211,7 @@ class Field:
         return Field(
             mapper=cls._build_mapper(
                 mapper_bind=anno_type,
-                field_info=info,
-                mapper_params={}
+                **info
             ),
             alias=info.get('alias'),
             id_field=info.get('id_field', False),
