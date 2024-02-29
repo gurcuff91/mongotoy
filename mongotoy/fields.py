@@ -363,7 +363,7 @@ class Field:
             ) from None
         except ValidationError as e:
             raise ValidationError(
-                errors=[ErrorWrapper(loc=(self.name,) if self._owner else (), error=i) for i in e.errors]
+                errors=[ErrorWrapper(loc=(self.name,), error=i) for i in e.errors]
             ) from None
 
         return value

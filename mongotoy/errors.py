@@ -1,25 +1,27 @@
+import typing
 from typing import Union
 
 
 class ErrorWrapper:
+    # noinspection SpellCheckingInspection
     """
-    Wrapper class for handling errors in the mongotoy library.
+        Wrapper class for handling errors in the mongotoy library.
 
-    Args:
-        - loc (str): The location where the error occurred.
-        - error (Exception): The wrapped error instance.
+        Args:
+            loc (str): The location where the error occurred.
+            error (Exception): The wrapped error instance.
 
-    Raises:
-        TypeError: If `loc` is not a tuple of strings.
-    """
+        Raises:
+            TypeError: If `loc` is not a tuple of strings.
+        """
 
     def __init__(self, loc: tuple[str], error: Union[Exception, 'ErrorWrapper']):
         """
         Initialize ErrorWrapper object.
 
         Parameters:
-            - loc (tuple[str]): The location where the error occurred.
-            - error (Union[Exception, 'ErrorWrapper']): The wrapped error instance.
+            loc (tuple[str]): The location where the error occurred.
+            error (Union[Exception, 'ErrorWrapper']): The wrapped error instance.
 
         Raises:
             TypeError: If `loc` is not a tuple of strings.
@@ -31,8 +33,8 @@ class ErrorWrapper:
         Recursively unwrap nested ErrorWrapper instances to get the original error and its location.
 
         Parameters:
-            - loc (tuple[str]): The current location information.
-            - error (Exception): The wrapped error instance.
+            loc (tuple[str]): The current location information.
+            error (Exception): The wrapped error instance.
 
         Returns:
             tuple[tuple[str], Exception]: The final location information and the original error.
@@ -92,22 +94,23 @@ class ErrorWrapper:
 
 
 class ValidationError(Exception):
+    # noinspection SpellCheckingInspection
     """
-    Exception class to represent data validation errors in the mongotoy library.
+        Exception class to represent data validation errors in the mongotoy library.
 
-    Args:
-        - errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
+        Args:
+            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
 
-    Raises:
-        TypeError: If `errors` is not a list of ErrorWrapper instances.
-    """
+        Raises:
+            TypeError: If `errors` is not a list of ErrorWrapper instances.
+        """
 
     def __init__(self, errors: list[ErrorWrapper]):
         """
         Initialize ValidationError object.
 
         Parameters:
-            - errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
+            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
 
         Raises:
             TypeError: If `errors` is not a list of ErrorWrapper instances.
@@ -153,21 +156,69 @@ class ValidationError(Exception):
         }
 
 
-class DocumentError(Exception):
+class DocumentValidationError(ValidationError):
+    # noinspection SpellCheckingInspection
     """
-    Exception class to represent errors related to document definitions in the mongotoy library.
+        Exception class to represent data validation errors at documents in the mongotoy library.
 
-    Args:
-        - loc (tuple[str]): The location where the error occurred.
-        - msg (str): The error message.
+        Args:
+            document_cls (typing.Type): The type of document where the validation error occurred.
+            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
+        """
+
+    def __init__(self, document_cls: typing.Type, errors: list[ErrorWrapper]):
+        """
+        Initialize DocumentValidationError object.
+
+        Parameters:
+            document_cls (typing.Type): The type of document where the validation error occurred.
+            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
+        """
+        self._document_cls = document_cls
+        super().__init__(errors)
+
+    def _get_message(self) -> str:
+        """
+        Get the error message for the document validation exception.
+
+        Returns:
+            str: The error message indicating the invalid fields.
+        """
+        msg = f'Invalid data at:'
+        for err in self.errors:
+            msg += f'\n  * {ErrorWrapper(loc=(self._document_cls.__name__,), error=err).get_message()}'
+        return msg
+
+    def dump_dict(self) -> dict:
+        """
+        Convert the document validation error information to a dictionary.
+
+        Returns:
+            dict: A dictionary containing the details of document validation errors.
+        """
+        return {
+            'type': 'DocumentValidationError',
+            'document': self._document_cls.__name__,
+            'errors': super().dump_dict()['errors']
+        }
+
+
+class DocumentError(Exception):
+    # noinspection SpellCheckingInspection
     """
+        Exception class to represent errors related to document definitions in the mongotoy library.
+
+        Args:
+            loc (tuple[str]): The location where the error occurred.
+            msg (str): The error message.
+        """
 
     def __init__(self, loc: tuple[str], msg: str):
         """
         Initialize DocumentError object.
 
         Parameters:
-            - loc (tuple[str]): The location where the error occurred.
-            - msg (str): The error message.
+            loc (tuple[str]): The location where the error occurred.
+            msg (str): The error message.
         """
         super().__init__(f'[{".".join(loc)}]. {msg}')

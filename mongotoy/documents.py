@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import bson
 
 from mongotoy import fields, references
-from mongotoy.errors import DocumentError, ValidationError, ErrorWrapper
+from mongotoy.errors import DocumentError, ValidationError, DocumentValidationError
 
 __all__ = (
     'EmbeddedDocument',
@@ -169,9 +169,9 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
             try:
                 field.__set__(self, value=value)
             except ValidationError as e:
-                errors.extend([ErrorWrapper(loc=(self.__class__.__name__,), error=j) for j in e.errors])
+                errors.extend(e.errors)
         if errors:
-            raise ValidationError(errors=errors)
+            raise DocumentValidationError(self.__class__, errors=errors)
 
     def _dump(
         self,
