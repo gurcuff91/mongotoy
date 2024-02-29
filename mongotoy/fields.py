@@ -8,9 +8,8 @@ import uuid
 import bson
 import pymongo
 
-from mongotoy import references
+from mongotoy import references, expressions
 from mongotoy.errors import ValidationError, ErrorWrapper
-from mongotoy.expresions import IndexType
 
 if typing.TYPE_CHECKING:
     from mongotoy import documents
@@ -30,7 +29,7 @@ def field(
         id_field: bool = False,
         default: typing.Any = EmptyValue,
         default_factory: typing.Callable[[], typing.Any] = None,
-        index: IndexType = None,
+        index: expressions.IndexType = None,
         sparse: bool = False,
         unique: bool = False
 ) -> dict:
@@ -87,16 +86,16 @@ class Field:
     """
 
     def __init__(
-            self,
-            mapper: 'Mapper',
-            alias: str = None,
-            id_field: bool = False,
-            nullable: bool = False,
-            default: typing.Any = EmptyValue,
-            default_factory: typing.Callable[[], typing.Any] = None,
-            index: IndexType = None,
-            sparse: bool = False,
-            unique: bool = False
+        self,
+        mapper: 'Mapper',
+        alias: str = None,
+        id_field: bool = False,
+        nullable: bool = False,
+        default: typing.Any = EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None,
+        index: expressions.IndexType = None,
+        sparse: bool = False,
+        unique: bool = False
     ):
         """
         Initialize the Field object.
@@ -389,7 +388,7 @@ class FieldProxy:
             str: The alias of the field.
         """
         if self._parent:
-            return f'{self._parent._alias}.{self.field.alias}'
+            return f'{self._parent._alias}.{self._field.alias}'
         return self._field.alias
 
     def __str__(self):
@@ -401,24 +400,6 @@ class FieldProxy:
         """
         return self._alias
 
-    def __pos__(self):
-        """
-        Represents the ascending ordering of the field.
-
-        Returns:
-            Q: Query object representing ascending order by the field.
-        """
-        return Asc(self._alias)
-
-    def __neg__(self):
-        """
-        Represents the descending ordering of the field.
-
-        Returns:
-            Q: Query object representing descending order by the field.
-        """
-        return Desc(self._alias)
-
     def __eq__(self, other):
         """
         Represents equality comparison of the field.
@@ -427,9 +408,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing equality comparison.
+            Query: Query object representing equality comparison.
         """
-        return Q._eq(self._alias, other)
+        return expressions.Query.Eq(self, other)
 
     def __ne__(self, other):
         """
@@ -439,9 +420,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing inequality comparison.
+            Query: Query object representing inequality comparison.
         """
-        return Q._ne(self._alias, other)
+        return expressions.Query.Ne(self._alias, other)
 
     def __gt__(self, other):
         """
@@ -451,9 +432,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing greater-than comparison.
+            Query: Query object representing greater-than comparison.
         """
-        return Q._gt(self._alias, other)
+        return expressions.Query.Gt(self._alias, other)
 
     def __ge__(self, other):
         """
@@ -463,9 +444,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing greater-than-or-equal-to comparison.
+            Query: Query object representing greater-than-or-equal-to comparison.
         """
-        return Q._gte(self._alias, other)
+        return expressions.Query.Gte(self._alias, other)
 
     def __lt__(self, other):
         """
@@ -475,9 +456,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing less-than comparison.
+            Query: Query object representing less-than comparison.
         """
-        return Q._lt(self._alias, other)
+        return expressions.Query.Lt(self._alias, other)
 
     def __le__(self, other):
         """
@@ -487,9 +468,9 @@ class FieldProxy:
             other: The value or field to compare.
 
         Returns:
-            Q: Query object representing less-than-or-equal-to comparison.
+            Query: Query object representing less-than-or-equal-to comparison.
         """
-        return Q._lte(self._alias, other)
+        return expressions.Query.Lte(self._alias, other)
 
     def __getattr__(self, item):
         """
@@ -512,8 +493,9 @@ class FieldProxy:
         if isinstance(mapper, (EmbeddedDocumentMapper, ReferencedDocumentMapper)):
             mapper = mapper.document_cls
 
+        # Check item on mapper
         try:
-            getattr(mapper.__bind__, item)
+            getattr(mapper.__bind__ if isinstance(mapper, Mapper) else mapper, item)
         except AttributeError as e:
             # noinspection PyProtectedMember
             raise AttributeError(f'[{self._field._owner.__name__}.{self._alias}] {str(e)}') from None
