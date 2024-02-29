@@ -388,7 +388,7 @@ class FieldProxy:
             str: The alias of the field.
         """
         if self._parent:
-            return f'{self._parent._alias}.{self._field.alias}'
+            return f'{self._parent._alias}.{self.field.alias}'
         return self._field.alias
 
     def __str__(self):
