@@ -4,15 +4,13 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import bson
 
-from mongotoy import fields, references
+from mongotoy import fields, references, cache
 from mongotoy.errors import DocumentError, ValidationError, DocumentValidationError
 
 __all__ = (
     'EmbeddedDocument',
     'Document',
 )
-
-_DOCUMENTS_REG = {}  # Dictionary for registering document classes
 
 
 class BaseDocumentMeta(abc.ABCMeta):
@@ -57,8 +55,14 @@ class BaseDocumentMeta(abc.ABCMeta):
                 # noinspection PyTypeChecker
                 raise DocumentError(
                     loc=(name, field_name),
-                    msg=f'Invalid field declaration. {str(e)}'
+                    msg=f'Invalid field annotation {anno_type}. {str(e)}'
                 ) from None
+            except Exception as e:
+                # noinspection PyTypeChecker
+                raise DocumentError(
+                    loc=(name, field_name),
+                    msg=str(e)
+                )
 
         # Update namespace with fields
         namespace.update(_fields)
@@ -67,7 +71,7 @@ class BaseDocumentMeta(abc.ABCMeta):
         # Set cls fields
         _cls.__fields__ = _fields
         # Register class
-        _DOCUMENTS_REG[name] = _cls
+        cache.documents.add_type(name, _cls)
 
         return _cls
 
@@ -112,26 +116,29 @@ class DocumentMeta(BaseDocumentMeta):
 
             # Unwrap ListMapper
             field_mapper = field.mapper
+            is_many = False
             if isinstance(field_mapper, fields.ListMapper):
                 field_mapper = field_mapper.mapper
+                is_many = True
 
             # Add references
             if isinstance(field_mapper, fields.ReferencedDocumentMapper):
                 # noinspection PyProtectedMember,PyUnresolvedReferences
                 _references[field.name] = references.Reference(
-                    document_cls=field_mapper._reference._document_cls,
-                    ref_field=field_mapper._reference._ref_field,
-                    key_name=field_mapper._reference._key_name,
-                    is_many=field_mapper._reference._is_many,
+                    document_cls=field_mapper._document_cls,
+                    ref_field=field_mapper._ref_field,
+                    key_name=field_mapper._key_name,
+                    is_many=is_many,
                     name=field.name
                 )
 
         if not _id_field:
             _id_field = fields.Field(
-                mapper=fields.ObjectIdMapper(),
+                mapper=fields.ObjectIdMapper(
+                    default_factory=lambda: bson.ObjectId()
+                ),
                 alias='_id',
-                id_field=True,
-                default_factory=lambda: bson.ObjectId()
+                id_field=True
             )
 
         # Set class props

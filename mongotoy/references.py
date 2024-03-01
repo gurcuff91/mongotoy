@@ -1,11 +1,12 @@
 import typing
+from mongotoy import cache
 
 if typing.TYPE_CHECKING:
     from mongotoy import documents, fields
 
 
 # noinspection PyProtectedMember
-def get_document_cls(document_cls: str) -> typing.Type['documents.BaseDocument']:
+def get_base_document_cls(document_cls: str) -> typing.Type['documents.BaseDocument']:
     """
     Get a document class by name from the registered documents.
 
@@ -20,10 +21,30 @@ def get_document_cls(document_cls: str) -> typing.Type['documents.BaseDocument']
 
     """
     from mongotoy import documents
-    document_cls = documents._DOCUMENTS_REG.get(document_cls)
-    if not document_cls:
+    if not cache.documents.exist_type(document_cls):
         raise TypeError(f'Document `{document_cls}` not found or not declared yet')
+    document_cls = cache.documents.get_type(document_cls)
+
+    if not issubclass(document_cls, documents.BaseDocument):
+        # noinspection SpellCheckingInspection
+        raise TypeError(f'Document {document_cls} must be subclass of mongotoy.BaseDocument')
     return document_cls
+
+
+def get_document_cls(document_cls: str) -> typing.Type['documents.Document']:
+    from mongotoy import documents
+    document_cls = get_base_document_cls(document_cls)
+    if not issubclass(document_cls, documents.Document):
+        # noinspection SpellCheckingInspection
+        raise TypeError(f'Document {document_cls} must be subclass of mongotoy.Document')
+    return document_cls
+
+
+def get_field(field_name: str, document_cls: typing.Type['documents.BaseDocument']) -> 'fields.Field':
+    field = document_cls.__fields__.get(field_name)
+    if not field:
+        raise TypeError(f'Field `{document_cls.__name__}.{field}` not exist')
+    return field
 
 
 class Reference:
@@ -60,23 +81,15 @@ class Reference:
     def document_cls(self) -> typing.Type['documents.Document']:
         # noinspection SpellCheckingInspection
         """
-                Get the referenced document class.
+        Get the referenced document class.
 
-                Returns:
-                    typing.Type['documents.Document']: The referenced document class.
+        Returns:
+            typing.Type['documents.Document']: The referenced document class.
 
-                Raises:
-                    TypeError: If the referenced document is not a subclass of mongotoy.Document.
-
-                """
-        from mongotoy import documents
-        document_cls = self._document_cls
-        if isinstance(self._document_cls, str):
-            document_cls = get_document_cls(self._document_cls)
-        if not issubclass(document_cls, documents.Document):
-            # noinspection SpellCheckingInspection
-            raise TypeError(f'Referenced document {document_cls} must be subclass of mongotoy.Document')
-        return document_cls
+        Raises:
+            TypeError: If the referenced document is not a subclass of mongotoy.Document.
+        """
+        return get_document_cls(self._document_cls)
 
     @property
     def ref_field(self) -> 'fields.Field':

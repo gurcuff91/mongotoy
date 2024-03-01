@@ -8,7 +8,7 @@ import uuid
 import bson
 import pymongo
 
-from mongotoy import references, expressions
+from mongotoy import references, expressions, cache
 from mongotoy.errors import ValidationError, ErrorWrapper
 
 if typing.TYPE_CHECKING:
@@ -90,9 +90,6 @@ class Field:
         mapper: 'Mapper',
         alias: str = None,
         id_field: bool = False,
-        nullable: bool = False,
-        default: typing.Any = EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None,
         index: expressions.IndexType = None,
         sparse: bool = False,
         unique: bool = False
@@ -104,9 +101,6 @@ class Field:
             mapper (Mapper): Mapper object for the field.
             alias (str, optional): Alias for the field. Defaults to None.
             id_field (bool, optional): Indicates if the field is an ID field. Defaults to False.
-            nullable (bool, optional): Indicates if the field is nullable. Defaults to False.
-            default (Any, optional): Default value for the field. Defaults to EmptyValue.
-            default_factory (Callable[[], Any], optional): Factory for generating default values. Defaults to None.
             index (IndexType, optional): Type of index for the field. Defaults to None.
             sparse (bool, optional): Whether the index should be sparse. Defaults to False.
             unique (bool, optional): Whether the index should be unique. Defaults to False.
@@ -115,7 +109,6 @@ class Field:
         # If it's an ID field, enforce specific settings
         if id_field:
             alias = '_id'
-            nullable = False
 
         # Initialize field attributes
         self._owner = None
@@ -123,8 +116,6 @@ class Field:
         self._mapper = mapper
         self._alias = alias
         self._id_field = id_field
-        self._nullable = nullable
-        self._default_factory = default_factory if default_factory else lambda: default
         self._index = index
         self._sparse = sparse
         self._unique = unique
@@ -149,10 +140,17 @@ class Field:
 
         # Simple type annotation
         if not typing.get_args(mapper_bind):
-            mapper_params = {}
+            # Set up mapper parameters
+            mapper_params = {
+                'nullable': options.pop('nullable', False),
+                'default': options.pop('default', EmptyValue),
+                'default_factory': options.pop('default_factory', None),
+            }
 
             # Check if it's a document type
             if isinstance(mapper_bind, (typing.ForwardRef, str)) or issubclass(mapper_bind, documents.BaseDocument):
+
+                # Get from ForwardRef
                 if isinstance(mapper_bind, typing.ForwardRef):
                     mapper_bind = getattr(mapper_bind, '__forward_arg__')
 
@@ -162,21 +160,21 @@ class Field:
 
                 # If it's a document reference
                 if options.get('type') == 'reference':
-                    mapper_params['ref_field'] = options.get('ref_field')
-                    mapper_params['key_name'] = options.get('key_name')
-                    mapper_params['is_many'] = options.get('is_many', False)
+                    mapper_params['ref_field'] = options.pop('ref_field')
+                    mapper_params['key_name'] = options.pop('key_name')
                     mapper_bind = ReferencedDocumentMapper
 
+            # Check if mapper_bind is suitable for reference
+            if options.get('type') == 'reference' and mapper_bind is not ReferencedDocumentMapper:
+                # noinspection SpellCheckingInspection
+                raise Exception(f'Type {mapper_bind} cannot be used with mongotoy.reference() descriptor')
+
             # Create the mapper
-            mapper_cls = _MAPPERS_REG.get(mapper_bind)
+            mapper_cls = cache.mappers.get_type(mapper_bind)
             if not mapper_cls:
                 raise TypeError(f'Data mapper not found for type {mapper_bind}')
-            mapper = mapper_cls(**mapper_params)
 
-            # If it's many, use ListMapper
-            if options.get('is_many', False):
-                mapper = ListMapper(mapper)
-            return mapper
+            return mapper_cls(**mapper_params)
 
         # Get type origin and arguments
         type_origin = typing.get_origin(mapper_bind)
@@ -188,10 +186,14 @@ class Field:
             options['nullable'] = True
             return cls._build_mapper(mapper_bind, **options)
 
-        # Check for list type
+        # Create mapper for list type
         if type_origin is list:
-            options['is_many'] = True
-            return cls._build_mapper(mapper_bind, **options)
+            return ListMapper(
+                nullable=options.pop('nullable', False),
+                default=options.pop('default', EmptyValue),
+                default_factory=options.pop('default_factory', EmptyValue),
+                mapper=cls._build_mapper(mapper_bind, **options)
+            )
 
         raise TypeError(f'Invalid outer annotation {type_origin}, allowed are [{list}, {typing.Optional}]')
 
@@ -215,12 +217,9 @@ class Field:
             ),
             alias=info.get('alias'),
             id_field=info.get('id_field', False),
-            nullable=info.get('nullable', False),
-            default=info.get('default', EmptyValue),
-            default_factory=info.get('default_factory'),
             index=info.get('index'),
-            sparse=info.get('sparse'),
-            unique=info.get('unique')
+            sparse=info.get('sparse', False),
+            unique=info.get('unique', False)
         )
 
     @property
@@ -328,13 +327,12 @@ class Field:
                 sparse=self._sparse
             )
 
-    def validate(self, value, **options) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the value of the field.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -343,24 +341,8 @@ class Field:
             ValidationError: If validation fails.
 
         """
-        if value is EmptyValue:
-            value = self._default_factory()
-            if value is EmptyValue:
-                return value
-
-        if value is None:
-            if not self._nullable:
-                raise ValidationError(
-                    errors=[ErrorWrapper(loc=(self.name,), error=ValueError('Null valued not allowed'))]
-                )
-            return value
-
         try:
-            value = self.mapper.validate(value, **options)
-        except (TypeError, ValueError) as e:
-            raise ValidationError(
-                errors=[ErrorWrapper(loc=(self.name,), error=e)]
-            ) from None
+            value = self.mapper.validate(value)
         except ValidationError as e:
             raise ValidationError(
                 errors=[ErrorWrapper(loc=(self.name,), error=i) for i in e.errors]
@@ -506,9 +488,6 @@ class FieldProxy:
         )
 
 
-_MAPPERS_REG = {}
-
-
 class MapperMeta(abc.ABCMeta):
     """
     Metaclass for Mapper classes.
@@ -530,7 +509,7 @@ class MapperMeta(abc.ABCMeta):
         """
         _cls = super().__new__(mcls, name, bases, namespace)
         _cls.__bind__ = kwargs.get('bind', _cls)
-        _MAPPERS_REG[_cls.__bind__] = _cls
+        cache.mappers.add_type(_cls.__bind__, _cls)
 
         return _cls
 
@@ -540,14 +519,43 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
     Abstract base class for data mappers.
     """
 
+    def __init__(
+        self,
+        nullable: bool = False,
+        default: typing.Any = EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None,
+    ):
+        self._nullable = nullable
+        self._default_factory = default_factory if default_factory else lambda: default
+
+    def validate(self, value) -> typing.Any:
+        if value is EmptyValue:
+            value = self._default_factory()
+            if value is EmptyValue:
+                return value
+
+        if value is None:
+            if not self._nullable:
+                raise ValueError('Null valued not allowed')
+            return value
+
+        try:
+            value = self.__validate_value__(value)
+        except (TypeError, ValueError) as e:
+            # noinspection PyTypeChecker
+            raise ValidationError(
+                errors=[ErrorWrapper(loc=(), error=e)]
+            ) from None
+
+        return value
+
     @abc.abstractmethod
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -603,7 +611,13 @@ class ListMapper(Mapper):
     Mapper for handling lists.
     """
 
-    def __init__(self, mapper: Mapper):
+    def __init__(
+        self,
+        mapper: Mapper,
+        nullable: bool = False,
+        default: typing.Any = EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None,
+    ):
         """
         Initialize the ListMapper.
 
@@ -612,6 +626,7 @@ class ListMapper(Mapper):
 
         """
         self._mapper = mapper
+        super().__init__(nullable, default, default_factory)
 
     @property
     def mapper(self) -> Mapper:
@@ -624,13 +639,12 @@ class ListMapper(Mapper):
         """
         return self._mapper
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the list value.
 
         Args:
             value: The list value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated list value.
@@ -646,7 +660,7 @@ class ListMapper(Mapper):
         errors = []
         for i, val in enumerate(value):
             try:
-                new_value.append(self.mapper.validate(val, **options))
+                new_value.append(self.mapper.validate(val))
             except ValidationError as e:
                 errors.extend([ErrorWrapper(loc=(str(i),), error=j) for j in e.errors])
         if errors:
@@ -702,7 +716,13 @@ class EmbeddedDocumentMapper(Mapper):
     Mapper for embedded documents.
     """
 
-    def __init__(self, document_cls: typing.Type['documents.BaseDocument'] | str):
+    def __init__(
+        self,
+        document_cls: typing.Type['documents.BaseDocument'] | str,
+        nullable: bool = False,
+        default: typing.Any = EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None,
+    ):
         """
         Initialize the EmbeddedDocumentMapper.
 
@@ -711,6 +731,7 @@ class EmbeddedDocumentMapper(Mapper):
 
         """
         self._document_cls = document_cls
+        super().__init__(nullable, default, default_factory)
 
     @property
     def document_cls(self) -> typing.Type['documents.BaseDocument']:
@@ -721,17 +742,14 @@ class EmbeddedDocumentMapper(Mapper):
             Type['documents.BaseDocument']: The class of the embedded document.
 
         """
-        if isinstance(self._document_cls, str):
-            return references.get_document_cls(self._document_cls)
-        return self._document_cls
+        return references.get_base_document_cls(self._document_cls)
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the embedded document value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -799,7 +817,9 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         document_cls: typing.Type['documents.BaseDocument'] | str,
         ref_field: str,
         key_name: str,
-        is_many: bool
+        nullable: bool = False,
+        default: typing.Any = EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None,
     ):
         """
         Initialize the ReferencedDocumentMapper.
@@ -808,19 +828,13 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             document_cls (Type['documents.BaseDocument'] | str): The class or name of the referenced document.
             ref_field (str): The name of the referenced field.
             key_name (str): The key name for the reference.
-            is_many (bool): Indicates if it's a many-to-many relationship.
-
         """
-        super().__init__(document_cls)
-        self._reference = references.Reference(
-            document_cls=document_cls,
-            ref_field=ref_field,
-            key_name=key_name,
-            is_many=is_many
-        )
+        self._ref_field = ref_field
+        self._key_name = key_name
+        super().__init__(document_cls, nullable, default, default_factory)
 
     @property
-    def document_cls(self) -> typing.Type['documents.BaseDocument']:
+    def document_cls(self) -> typing.Type['documents.Document']:
         """
         Get the class of the referenced document.
 
@@ -828,7 +842,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             Type['documents.BaseDocument']: The class of the referenced document.
 
         """
-        return self._reference.document_cls
+        return references.get_document_cls(self._document_cls)
 
     @property
     def ref_field(self) -> Field:
@@ -839,7 +853,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             Field: The reference field.
 
         """
-        return self._reference.ref_field
+        return references.get_field(self._ref_field, document_cls=self.document_cls)
 
     def dump_bson(self, value, **options) -> typing.Any:
         """
@@ -861,13 +875,12 @@ class StrMapper(Mapper, bind=str):
     Mapper for handling string values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the string value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -886,13 +899,12 @@ class IntMapper(Mapper, bind=int):
     Mapper for handling integer values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the integer value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -911,13 +923,12 @@ class FloatMapper(Mapper, bind=float):
     Mapper for handling float values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the float value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -936,13 +947,12 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
     Mapper for handling BSON ObjectId values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the ObjectId value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -961,13 +971,12 @@ class DecimalMapper(Mapper, bind=decimal.Decimal):
     Mapper for handling decimal values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the decimal value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -986,13 +995,12 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
     Mapper for handling UUID values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the UUID value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -1011,13 +1019,12 @@ class DateTimeMapper(Mapper, bind=datetime.datetime):
     Mapper for handling datetime values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the datetime value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -1036,13 +1043,12 @@ class DateMapper(Mapper, bind=datetime.date):
     Mapper for handling date values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the date value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -1056,18 +1062,17 @@ class DateMapper(Mapper, bind=datetime.date):
         return value
 
 
-class TimeDeltaMapper(Mapper, bind=datetime.timedelta):
+class TimeMapper(Mapper, bind=datetime.time):
     """
     Mapper for handling timedelta values.
     """
 
-    def validate(self, value, **options) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the timedelta value.
 
         Args:
             value: The value to be validated.
-            **options: Additional options.
 
         Returns:
             Any: The validated value.
@@ -1076,6 +1081,6 @@ class TimeDeltaMapper(Mapper, bind=datetime.timedelta):
             TypeError: If validation fails due to incorrect data type.
 
         """
-        if not isinstance(value, datetime.timedelta):
-            raise TypeError(f'Invalid data type {type(value)}, required is {datetime.timedelta}')
+        if not isinstance(value, datetime.time):
+            raise TypeError(f'Invalid data type {type(value)}, required is {datetime.time}')
         return value

@@ -38,13 +38,7 @@ class ErrorWrapper:
 
         Returns:
             tuple[tuple[str], Exception]: The final location information and the original error.
-
-        Raises:
-            TypeError: If `loc` is not a tuple of strings.
         """
-        if not isinstance(loc, tuple) or not all(isinstance(x, str) for x in loc):
-            raise TypeError("Location must be a tuple of strings.")
-
         if isinstance(error, ErrorWrapper):
             # noinspection PyTypeChecker
             return self._unwrap_error(loc + error.loc, error.error)
