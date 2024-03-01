@@ -523,7 +523,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
         self,
         nullable: bool = False,
         default: typing.Any = EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None,
+        default_factory: typing.Callable[[], typing.Any] = None
     ):
         self._nullable = nullable
         self._default_factory = default_factory if default_factory else lambda: default
