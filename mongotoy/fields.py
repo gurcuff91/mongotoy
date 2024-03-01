@@ -918,6 +918,61 @@ class IntMapper(Mapper, bind=int):
         return value
 
 
+class BoolMapper(Mapper, bind=bool):
+    """
+    Mapper for handling integer values.
+    """
+
+    def __validate_value__(self, value) -> typing.Any:
+        """
+        Validate the boolean value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bool):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bool}')
+        return value
+
+
+class BinMapper(Mapper, bind=bytes):
+    """
+    Mapper for handling binary values.
+    """
+
+    def __validate_value__(self, value) -> typing.Any:
+        """
+        Validate the boolean value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bytes):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bytes}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        import base64
+        return (
+            f'data:application/octet-stream;base64,'
+            f'{base64.b64encode(value).decode()}'
+        )
+
+
 class FloatMapper(Mapper, bind=float):
     """
     Mapper for handling float values.
@@ -965,6 +1020,9 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
             raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
         return value
 
+    def dump_json(self, value, **options) -> typing.Any:
+        return str(value)
+
 
 class DecimalMapper(Mapper, bind=decimal.Decimal):
     """
@@ -985,9 +1043,21 @@ class DecimalMapper(Mapper, bind=decimal.Decimal):
             TypeError: If validation fails due to incorrect data type.
 
         """
+        if isinstance(value, bson.Decimal128):
+            value = value.to_decimal()
         if not isinstance(value, decimal.Decimal):
             raise TypeError(f'Invalid data type {type(value)}, required is {decimal.Decimal}')
-        return value
+
+        # Ensure decimal limits for mongodb
+        # https://www.mongodb.com/docs/upcoming/release-notes/3.4/#decimal-type
+        ctx = decimal.Context(prec=34)
+        return ctx.create_decimal(value)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return float(value)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return bson.Decimal128(value)
 
 
 class UUIDMapper(Mapper, bind=uuid.UUID):
@@ -1013,6 +1083,9 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
             raise TypeError(f'Invalid data type {type(value)}, required is {uuid.UUID}')
         return value
 
+    def dump_json(self, value, **options) -> typing.Any:
+        return str(value)
+
 
 class DateTimeMapper(Mapper, bind=datetime.datetime):
     """
@@ -1036,6 +1109,9 @@ class DateTimeMapper(Mapper, bind=datetime.datetime):
         if not isinstance(value, datetime.datetime):
             raise TypeError(f'Invalid data type {type(value)}, required is {datetime.datetime}')
         return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return value.isoformat()
 
 
 class DateMapper(Mapper, bind=datetime.date):
@@ -1061,6 +1137,9 @@ class DateMapper(Mapper, bind=datetime.date):
             raise TypeError(f'Invalid data type {type(value)}, required is {datetime.date}')
         return value
 
+    def dump_json(self, value, **options) -> typing.Any:
+        return value.isoformat()
+
 
 class TimeMapper(Mapper, bind=datetime.time):
     """
@@ -1084,3 +1163,6 @@ class TimeMapper(Mapper, bind=datetime.time):
         if not isinstance(value, datetime.time):
             raise TypeError(f'Invalid data type {type(value)}, required is {datetime.time}')
         return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return value.isoformat()
