@@ -2,6 +2,19 @@ import typing
 
 
 def parse_geojson(geojson: dict, parser: typing.Type['Geometry']) -> 'Geometry':
+    """
+    Parse a GeoJSON dictionary using a given geometry parser.
+
+    Args:
+        geojson (dict): The GeoJSON dictionary to parse.
+        parser (typing.Type['Geometry']): The geometry parser class.
+
+    Returns:
+        'Geometry': An instance of the parsed geometry.
+
+    Raises:
+        TypeError: If the GeoJSON dictionary is invalid or does not match the expected parser.
+    """
     if not geojson.get('type'):
         raise TypeError('Invalid geo-json, type field is required')
     if not geojson.get('coordinates'):
@@ -14,8 +27,20 @@ def parse_geojson(geojson: dict, parser: typing.Type['Geometry']) -> 'Geometry':
 
 
 class Geometry:
+    """
+    Base class for geometries.
+
+    Methods:
+        dump_geojson: Dump the geometry to a GeoJSON dictionary.
+    """
 
     def dump_geojson(self) -> dict:
+        """
+        Dump the geometry to a GeoJSON dictionary.
+
+        Returns:
+            dict: The GeoJSON representation of the geometry.
+        """
         return {
             'type': self.__class__.__name__,
             'coordinates': self

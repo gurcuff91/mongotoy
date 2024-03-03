@@ -1,3 +1,4 @@
+
 import collections
 import re
 
@@ -5,16 +6,34 @@ from mongotoy import geodata
 
 
 class IpV4(collections.UserString):
+    """
+    Represents an IPv4 address.
+
+    Args:
+        value (str): The IPv4 address value.
+
+    Raises:
+        ValueError: If the value is not a valid IPv4 address.
+    """
 
     def __init__(self, value):
         if not re.compile(
             r'(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
         ).fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid ip-v4')
+            raise ValueError(f'Value {value} is not a valid IPv4 address')
         super().__init__(value)
 
 
 class IpV6(collections.UserString):
+    """
+    Represents an IPv6 address.
+
+    Args:
+        value (str): The IPv6 address value.
+
+    Raises:
+        ValueError: If the value is not a valid IPv6 address.
+    """
 
     def __init__(self, value):
         # noinspection RegExpSimplifiable
@@ -28,11 +47,20 @@ class IpV6(collections.UserString):
             r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|'
             r'1{0,1}[0-9]){0,1}[0-9]))'
         ).fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid ip-v6')
+            raise ValueError(f'Value {value} is not a valid IPv6 address')
         super().__init__(value)
 
 
 class Port(collections.UserString):
+    """
+    Represents a port number.
+
+    Args:
+        value (str): The port number value.
+
+    Raises:
+        ValueError: If the value is not a valid port number.
+    """
 
     def __init__(self, value):
         if not re.compile(
@@ -44,16 +72,34 @@ class Port(collections.UserString):
 
 
 class Mac(collections.UserString):
+    """
+    Represents a MAC address.
+
+    Args:
+        value (str): The MAC address value.
+
+    Raises:
+        ValueError: If the value is not a valid MAC address.
+    """
 
     def __init__(self, value):
         if not re.compile(
             r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$'
         ).fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid mac address')
+            raise ValueError(f'Value {value} is not a valid MAC address')
         super().__init__(value)
 
 
 class Phone(collections.UserString):
+    """
+    Represents a phone number.
+
+    Args:
+        value (str): The phone number value.
+
+    Raises:
+        ValueError: If the value is not a valid phone number.
+    """
 
     def __init__(self, value):
         # noinspection RegExpRedundantEscape,RegExpSimplifiable
@@ -65,6 +111,15 @@ class Phone(collections.UserString):
 
 
 class Email(collections.UserString):
+    """
+    Represents an email address.
+
+    Args:
+        value (str): The email address value.
+
+    Raises:
+        ValueError: If the value is not a valid email address.
+    """
 
     def __init__(self, value):
         if not re.compile(
@@ -72,11 +127,20 @@ class Email(collections.UserString):
             r'(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]'
             r'{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))'
         ).fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid e-mail')
+            raise ValueError(f'Value {value} is not a valid email address')
         super().__init__(value)
 
 
 class Card(collections.UserString):
+    """
+    Represents a credit card number.
+
+    Args:
+        value (str): The credit card number value.
+
+    Raises:
+        ValueError: If the value is not a valid credit card number.
+    """
 
     def __init__(self, value):
         if not re.compile(
@@ -90,6 +154,15 @@ class Card(collections.UserString):
 
 
 class Ssn(collections.UserString):
+    """
+    Represents a Social Security Number (SSN).
+
+    Args:
+        value (str): The SSN value.
+
+    Raises:
+        ValueError: If the value is not a valid SSN.
+    """
 
     def __init__(self, value):
         if not re.compile(
@@ -100,6 +173,15 @@ class Ssn(collections.UserString):
 
 
 class Hashtag(collections.UserString):
+    """
+    Represents a hashtag.
+
+    Args:
+        value (str): The hashtag value.
+
+    Raises:
+        ValueError: If the value is not a valid hashtag.
+    """
 
     def __init__(self, value):
         if not re.compile(
@@ -110,6 +192,15 @@ class Hashtag(collections.UserString):
 
 
 class Doi(collections.UserString):
+    """
+    Represents a Digital Object Identifier (DOI).
+
+    Args:
+        value (str): The DOI value.
+
+    Raises:
+        ValueError: If the value is not a valid DOI.
+    """
 
     def __init__(self, value):
         # noinspection RegExpRedundantEscape,RegExpSimplifiable
@@ -121,9 +212,18 @@ class Doi(collections.UserString):
 
 
 class Url(collections.UserString):
+    """
+    Represents a URL.
+
+    Args:
+        value (str): The URL value.
+
+    Raises:
+        ValueError: If the value is not a valid URL.
+    """
 
     def __init__(self, value):
-        # noinspection RegExpRedundantEscape,RegExpDuplicateCharacterInClass
+        # noinspection RegExpDuplicateCharacterInClass,RegExpRedundantEscape
         if not re.compile(
             r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b'
             r'([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)'
@@ -133,6 +233,15 @@ class Url(collections.UserString):
 
 
 class Version(collections.UserString):
+    """
+    Represents a Semantic Version Number.
+
+    Args:
+        value (str): The version number value.
+
+    Raises:
+        ValueError: If the value is not a valid Semantic Version Number.
+    """
 
     def __init__(self, value):
         if not re.compile(

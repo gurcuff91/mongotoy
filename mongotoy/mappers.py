@@ -42,7 +42,16 @@ class MapperMeta(abc.ABCMeta):
 class Mapper(abc.ABC, metaclass=MapperMeta):
     """
     Abstract base class for data mappers.
+
+    Args:
+        nullable (bool, optional): Whether the value can be None. Defaults to False.
+        default (Any, optional): Default value for the mapper. Defaults to expressions.EmptyValue.
+        default_factory (Callable[[], Any], optional): A callable that returns the default value.
+            Defaults to None.
     """
+
+    if typing.TYPE_CHECKING:
+        __bind__: typing.Type
 
     def __init__(
         self,
@@ -54,6 +63,18 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
         self._default_factory = default_factory if default_factory else lambda: default
 
     def validate(self, value) -> typing.Any:
+        """
+        Validate the value against the mapper.
+
+        Args:
+            value (Any): The value to be validated.
+
+        Raises:
+            ValueError: If the value is invalid.
+
+        Returns:
+            Any: The validated value.
+        """
         if value is expressions.EmptyValue:
             value = self._default_factory()
             if value is expressions.EmptyValue:
@@ -61,16 +82,14 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
         if value is None:
             if not self._nullable:
-                raise ValueError('Null valued not allowed')
+                raise ValueError('Null value not allowed')
             return value
 
         try:
             value = self.__validate_value__(value)
         except (TypeError, ValueError) as e:
             # noinspection PyTypeChecker
-            raise ValidationError(
-                errors=[ErrorWrapper(loc=(), error=e)]
-            ) from None
+            raise ValidationError(errors=[ErrorWrapper(loc=(), error=e)]) from None
 
         return value
 
@@ -766,8 +785,25 @@ class VersionMapper(StrMapper, bind=types.Version):
 
 
 class GeometryMapper(Mapper):
+    """
+    Mapper class for geometry data.
+
+    This mapper validates and handles geometry data.
+    """
 
     def __validate_value__(self, value) -> typing.Any:
+        """
+        Validate the value against the mapper.
+
+        Args:
+            value (Any): The value to be validated.
+
+        Raises:
+            TypeError: If the value is not of the expected type.
+
+        Returns:
+            Any: The validated value.
+        """
         if isinstance(value, dict):
             # noinspection PyTypeChecker
             value = geodata.parse_geojson(value, parser=self.__bind__)
@@ -776,31 +812,61 @@ class GeometryMapper(Mapper):
         return value
 
     def dump_json(self, value, **options) -> typing.Any:
+        """
+        Convert the value to JSON format.
+
+        Args:
+            value (Any): The value to be converted.
+
+        Returns:
+            Any: The JSON representation of the value.
+        """
         return value.dump_geojson()
 
     def dump_bson(self, value, **options) -> typing.Any:
+        """
+        Convert the value to BSON format.
+
+        Args:
+            value (Any): The value to be converted.
+
+        Returns:
+            Any: The BSON representation of the value.
+        """
         return value.dump_geojson()
 
 
 class PointMapper(GeometryMapper, bind=types.Point):
-    pass
+    """
+    Mapper class for Point geometry data.
+    """
 
 
 class MultiPointMapper(GeometryMapper, bind=types.MultiPoint):
-    pass
+    """
+    Mapper class for MultiPoint geometry data.
+    """
 
 
 class LineStringMapper(GeometryMapper, bind=types.LineString):
-    pass
+    """
+    Mapper class for LineString geometry data.
+    """
 
 
 class MultiLineStringMapper(GeometryMapper, bind=types.MultiLineString):
-    pass
+    """
+    Mapper class for MultiLineString geometry data.
+    """
 
 
 class PolygonMapper(GeometryMapper, bind=types.Polygon):
-    pass
+    """
+    Mapper class for Polygon geometry data.
+    """
 
 
 class MultiPolygonMapper(GeometryMapper, bind=types.MultiPolygon):
-    pass
+    """
+    Mapper class for MultiPolygon geometry data.
+    """

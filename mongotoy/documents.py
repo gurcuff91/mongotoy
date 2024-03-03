@@ -1,8 +1,11 @@
 import abc
+import dataclasses
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Literal
 
 import bson
+import pymongo
+from pymongo.read_concern import ReadConcern
 
 from mongotoy import fields, references, cache, mappers, expressions
 from mongotoy.errors import DocumentError, ValidationError, DocumentValidationError
@@ -10,6 +13,7 @@ from mongotoy.errors import DocumentError, ValidationError, DocumentValidationEr
 __all__ = (
     'EmbeddedDocument',
     'Document',
+    'DocumentConfig',
 )
 
 
@@ -47,7 +51,8 @@ class BaseDocumentMeta(abc.ABCMeta):
                 # noinspection PyTypeChecker,SpellCheckingInspection
                 raise DocumentError(
                     loc=(name, field_name),
-                    msg=f'Invalid field descriptor. Use mongotoy.field() or mongotoy.reference() descriptors'
+                    msg=f'Invalid field descriptor {type(info)}. '
+                        f'Use mongotoy.field() or mongotoy.reference() descriptors'
                 )
             try:
                 _fields[field_name] = fields.Field.from_annotated_type(anno_type, info=info)
@@ -137,15 +142,15 @@ class DocumentMeta(BaseDocumentMeta):
                 mapper=mappers.ObjectIdMapper(
                     default_factory=lambda: bson.ObjectId()
                 ),
-                alias='_id',
                 id_field=True
             )
 
         # Set class props
         _cls.__fields__ = OrderedDict({'id': _id_field, **_cls.__fields__})
         _cls.__references__ = _references
-        _cls.__collection_name__ = f'{name.lower()}s'
+        _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
         _cls.id = _id_field
+        _cls.document_config = namespace.get('document_config', DocumentConfig())
 
         return _cls
 
@@ -307,6 +312,23 @@ class EmbeddedDocument(BaseDocument):
     """
 
 
+@dataclasses.dataclass
+class DocumentConfig:
+    indexes: list[pymongo.IndexModel] = dataclasses.field(default_factory=lambda: list())
+    capped: bool = dataclasses.field(default=False)
+    capped_size: int = dataclasses.field(default=16 * (2 ** 20))  # 16 Mb
+    capped_max: int = dataclasses.field(default=None)
+    timeseries_field: str = dataclasses.field(default=None)
+    timeseries_meta_field: str = dataclasses.field(default=None)
+    timeseries_granularity: Literal['seconds', 'minutes', 'hours'] = dataclasses.field(default='seconds')
+    timeseries_expire_after_seconds: int = dataclasses.field(default=None)
+    codec_options: bson.CodecOptions = dataclasses.field(default=None)
+    read_preference: pymongo.ReadPreference = dataclasses.field(default=None)
+    read_concern: ReadConcern = dataclasses.field(default=None)
+    write_concern: pymongo.WriteConcern = dataclasses.field(default=None)
+    extra_options: dict = dataclasses.field(default_factory=lambda: dict())
+
+
 class Document(BaseDocument, metaclass=DocumentMeta):
     """
     Class representing a document.
@@ -314,3 +336,8 @@ class Document(BaseDocument, metaclass=DocumentMeta):
     if TYPE_CHECKING:
         __collection_name__: str
         __references__: dict[str, references.Reference]
+        id: bson.ObjectId
+        document_config: DocumentConfig
+
+    __collection_name__ = None
+    document_config = DocumentConfig()

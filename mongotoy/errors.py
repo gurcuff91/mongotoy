@@ -216,3 +216,7 @@ class DocumentError(Exception):
             msg (str): The error message.
         """
         super().__init__(f'[{".".join(loc)}]. {msg}')
+
+
+class EngineError(Exception):
+    pass
