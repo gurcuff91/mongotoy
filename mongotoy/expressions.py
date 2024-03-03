@@ -3,6 +3,8 @@ from typing import Literal
 
 import pymongo
 
+
+EmptyValue = type('EmptyValue', (), {})()
 IndexType = Literal[-1, 1, '2d', '2dsphere', 'hashed', 'text']
 
 

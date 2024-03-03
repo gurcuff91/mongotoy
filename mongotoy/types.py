@@ -1,40 +1,24 @@
+import collections
 import re
-import typing
 
-from mongotoy import fields
+from mongotoy import geodata
 
 
-class IpV4(fields.StrMapper):
+class IpV4(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid ip-v4')
-        return value
+        super().__init__(value)
 
 
-class IpV6(fields.StrMapper):
+class IpV6(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
+    def __init__(self, value):
         # noinspection RegExpSimplifiable
-        self._regex = re.compile(
+        if not re.compile(
             r'(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:)'
             r'{1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:)'
             r'{1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]'
@@ -43,242 +27,190 @@ class IpV6(fields.StrMapper):
             r'((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|'
             r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|'
             r'1{0,1}[0-9]){0,1}[0-9]))'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid ip-v6')
-        return value
+        super().__init__(value)
 
 
-class Port(fields.StrMapper):
+class Port(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|'
             r'([0-9]{1,4}))$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid port number')
-        return value
+        super().__init__(value)
 
 
-class Mac(fields.StrMapper):
+class Mac(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid mac address')
-        return value
+        super().__init__(value)
 
 
-class Phone(fields.StrMapper):
+class Phone(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
+    def __init__(self, value):
         # noinspection RegExpRedundantEscape,RegExpSimplifiable
-        self._regex = re.compile(
+        if not re.compile(
             r'^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid phone number')
-        return value
+        super().__init__(value)
 
 
-class Email(fields.StrMapper):
+class Email(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|'
             r'(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]'
             r'{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid e-mail')
-        return value
+        super().__init__(value)
 
 
-class Card(fields.StrMapper):
+class Card(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'(^4[0-9]{12}(?:[0-9]{3})?$)|(^(?:5[1-5][0-9]{2}|222[1-9]|22'
             r'[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}$)|(3[47][0-9]'
             r'{13})|(^3(?:0[0-5]|[68][0-9])[0-9]{11}$)|(^6(?:011|5[0-9]{2})[0-9]'
             r'{12}$)|(^(?:2131|1800|35\d{3})\d{11}$)'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid credit card number')
-        return value
+        super().__init__(value)
 
 
-class Ssn(fields.StrMapper):
+class Ssn(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'^(?!0{3})(?!6{3})[0-8]\d{2}-(?!0{2})\d{2}-(?!0{4})\d{4}$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid SSN')
-        return value
+        super().__init__(value)
 
 
-class BitcoinAddr(fields.StrMapper):
+class Hashtag(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
-            r'^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid bitcoin address')
-        return value
-
-
-class Hashtag(fields.StrMapper):
-
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'^#[^ !@#$%^&*(),.?":{}|<>]*$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid hashtag')
-        return value
+        super().__init__(value)
 
 
-class Doi(fields.StrMapper):
+class Doi(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
+    def __init__(self, value):
         # noinspection RegExpRedundantEscape,RegExpSimplifiable
-        self._regex = re.compile(
+        if not re.compile(
             r'^(10\.\d{4,5}\/[\S]+[^;,.\s])$'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid DOI')
-        return value
+        super().__init__(value)
 
 
-class Url(fields.StrMapper):
+class Url(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
+    def __init__(self, value):
         # noinspection RegExpRedundantEscape,RegExpDuplicateCharacterInClass
-        self._regex = re.compile(
+        if not re.compile(
             r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b'
             r'([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)'
-        )
-
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
+        ).fullmatch(value):
             raise ValueError(f'Value {value} is not a valid URL')
-        return value
+        super().__init__(value)
 
 
-class Version(fields.StrMapper):
+class Version(collections.UserString):
 
-    def __init__(
-        self,
-        nullable: bool = False,
-        default: typing.Any = fields.EmptyValue,
-        default_factory: typing.Callable[[], typing.Any] = None
-    ):
-        super().__init__(nullable, default, default_factory)
-        self._regex = re.compile(
+    def __init__(self, value):
+        if not re.compile(
             r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-]'
             r'[0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+'
             r'([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
-        )
+        ).fullmatch(value):
+            raise ValueError(f'Value {value} is not a valid Semantic Version Number')
+        super().__init__(value)
 
-    def __validate_value__(self, value) -> typing.Any:
-        value = super().__validate_value__(value)
-        if not self._regex.fullmatch(value):
-            raise ValueError(f'Value {value} is not a valid semantic version number')
-        return value
+
+class Point(geodata.Position, geodata.Geometry):
+    """
+    For type "Point", the "coordinates" member is a single position.
+
+    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.2
+    """
+
+    def __init__(self, *coordinates: int | float):
+        if len(coordinates) != 2:
+            raise TypeError(f'The Point must represent single position, i.e. [lat, long]')
+        super().__init__(*coordinates)
+
+
+class MultiPoint(list[Point], geodata.Geometry):
+    """
+    For type "MultiPoint", the "coordinates" member is an array of
+    positions.
+
+    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.3
+    """
+
+    def __init__(self, *points: Point):
+        super().__init__([Point(*i) for i in points])
+
+
+class LineString(list[Point], geodata.Geometry):
+    """
+    For type "LineString", the "coordinates" member is an array of two or
+    more positions.
+
+    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.4
+    """
+
+    def __init__(self, *points: Point):
+        if not len(points) >= 2:
+            raise TypeError('The LineString must be an array of two or more Points')
+        super().__init__([Point(*i) for i in points])
+
+
+class MultiLineString(list[LineString], geodata.Geometry):
+    """
+    For type "MultiLineString", the "coordinates" member is an array of
+    LineString coordinate arrays.
+
+    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.5
+    """
+
+    def __init__(self, *lines: LineString):
+        super().__init__([LineString(*i) for i in lines])
+
+
+class Polygon(list[LineString], geodata.Geometry):
+    """
+    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
+    """
+
+    def __init__(self, *rings: LineString):
+        super().__init__([geodata.LinearRing(*i) for i in rings])
+
+
+class MultiPolygon(list[Polygon], geodata.Geometry):
+    """
+     For type "MultiPolygon", the "coordinates" member is an array of
+     Polygon coordinate arrays.
+
+     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.7
+    """
+
+    def __init__(self, *polygons: Polygon):
+        super().__init__([Polygon(*i) for i in polygons])

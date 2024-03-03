@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import bson
 
-from mongotoy import fields, references, cache
+from mongotoy import fields, references, cache, mappers, expressions
 from mongotoy.errors import DocumentError, ValidationError, DocumentValidationError
 
 __all__ = (
@@ -117,12 +117,12 @@ class DocumentMeta(BaseDocumentMeta):
             # Unwrap ListMapper
             field_mapper = field.mapper
             is_many = False
-            if isinstance(field_mapper, fields.ListMapper):
+            if isinstance(field_mapper, mappers.ListMapper):
                 field_mapper = field_mapper.mapper
                 is_many = True
 
             # Add references
-            if isinstance(field_mapper, fields.ReferencedDocumentMapper):
+            if isinstance(field_mapper, mappers.ReferencedDocumentMapper):
                 # noinspection PyProtectedMember,PyUnresolvedReferences
                 _references[field.name] = references.Reference(
                     document_cls=field_mapper._document_cls,
@@ -134,7 +134,7 @@ class DocumentMeta(BaseDocumentMeta):
 
         if not _id_field:
             _id_field = fields.Field(
-                mapper=fields.ObjectIdMapper(
+                mapper=mappers.ObjectIdMapper(
                     default_factory=lambda: bson.ObjectId()
                 ),
                 alias='_id',
@@ -172,7 +172,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         self.__data__ = {}
         errors = []
         for field in self.__fields__.values():
-            value = data.get(field.alias, data.get(field.name, fields.EmptyValue))
+            value = data.get(field.alias, data.get(field.name, expressions.EmptyValue))
             try:
                 field.__set__(self, value=value)
             except ValidationError as e:
@@ -203,7 +203,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         data = {}
         for field in self.__fields__.values():
             value = field.__get__(self, owner=self.__class__)
-            if exclude_empty and value is fields.EmptyValue:
+            if exclude_empty and value is expressions.EmptyValue:
                 continue
             if exclude_null and value is None:
                 continue
@@ -215,7 +215,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
                     by_alias=by_alias,
                     exclude_empty=exclude_empty,
                     exclude_null=exclude_null,
-                ) if value not in (fields.EmptyValue, None) else value
+                ) if value not in (expressions.EmptyValue, None) else value
 
             data[field.alias if by_alias else field.name] = value
 
