@@ -135,9 +135,9 @@ class Field:
         if not typing.get_args(mapper_bind):
             # Set up mapper parameters
             mapper_params = {
-                'nullable': options.pop('nullable', False),
-                'default': options.pop('default', expressions.EmptyValue),
-                'default_factory': options.pop('default_factory', None),
+                'nullable': options.get('nullable', False),
+                'default': options.get('default', expressions.EmptyValue),
+                'default_factory': options.get('default_factory', None),
             }
 
             # Check if it's a document type
@@ -184,7 +184,7 @@ class Field:
             return mappers.ListMapper(
                 nullable=options.pop('nullable', False),
                 default=options.pop('default', expressions.EmptyValue),
-                default_factory=options.pop('default_factory', expressions.EmptyValue),
+                default_factory=options.pop('default_factory', None),
                 mapper=cls._build_mapper(mapper_bind, **options)
             )
 
@@ -335,7 +335,12 @@ class Field:
 
         """
         try:
-            value = self.mapper.validate(value)
+            value = self.mapper(value)
+            # Check id value
+            if self.alias == '_id' and value in (None, expressions.EmptyValue):
+                raise ValidationError([
+                    ErrorWrapper(loc=tuple(), error=ValueError('Id field value required'))
+                ])
         except ValidationError as e:
             raise ValidationError(
                 errors=[ErrorWrapper(loc=(self.name,), error=i) for i in e.errors]

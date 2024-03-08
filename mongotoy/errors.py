@@ -220,3 +220,11 @@ class DocumentError(Exception):
 
 class EngineError(Exception):
     pass
+
+
+class NoResultsError(Exception):
+    pass
+
+
+class ManyResultsError(Exception):
+    pass

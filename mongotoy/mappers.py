@@ -62,7 +62,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
         self._nullable = nullable
         self._default_factory = default_factory if default_factory else lambda: default
 
-    def validate(self, value) -> typing.Any:
+    def __call__(self, value) -> typing.Any:
         """
         Validate the value against the mapper.
 
@@ -86,15 +86,14 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
             return value
 
         try:
-            value = self.__validate_value__(value)
+            value = self.validate(value)
         except (TypeError, ValueError) as e:
-            # noinspection PyTypeChecker
-            raise ValidationError(errors=[ErrorWrapper(loc=(), error=e)]) from None
+            raise ValidationError(errors=[ErrorWrapper(loc=tuple(), error=e)]) from None
 
         return value
 
     @abc.abstractmethod
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the value.
 
@@ -170,6 +169,8 @@ class ListMapper(Mapper):
 
         """
         self._mapper = mapper
+        # List must be at least empty list not an EmptyValue at all
+        default = [] if default is expressions.EmptyValue else default
         super().__init__(nullable, default, default_factory)
 
     @property
@@ -183,7 +184,7 @@ class ListMapper(Mapper):
         """
         return self._mapper
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the list value.
 
@@ -204,13 +205,13 @@ class ListMapper(Mapper):
         errors = []
         for i, val in enumerate(value):
             try:
-                new_value.append(self.mapper.validate(val))
+                new_value.append(self.mapper(val))
             except ValidationError as e:
                 errors.extend([ErrorWrapper(loc=(str(i),), error=j) for j in e.errors])
         if errors:
             raise ValidationError(errors=errors)
 
-        return value
+        return new_value
 
     def dump_dict(self, value, **options) -> typing.Any:
         """
@@ -288,7 +289,7 @@ class EmbeddedDocumentMapper(Mapper):
         """
         return references.get_base_document_cls(self._document_cls)
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the embedded document value.
 
@@ -419,7 +420,7 @@ class StrMapper(Mapper, bind=str):
     Mapper for handling string values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the string value.
 
@@ -443,7 +444,7 @@ class IntMapper(Mapper, bind=int):
     Mapper for handling integer values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the integer value.
 
@@ -467,7 +468,7 @@ class BoolMapper(Mapper, bind=bool):
     Mapper for handling integer values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the boolean value.
 
@@ -491,7 +492,7 @@ class BinMapper(Mapper, bind=bytes):
     Mapper for handling binary values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the boolean value.
 
@@ -522,7 +523,7 @@ class FloatMapper(Mapper, bind=float):
     Mapper for handling float values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the float value.
 
@@ -546,7 +547,7 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
     Mapper for handling BSON ObjectId values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the ObjectId value.
 
@@ -573,7 +574,7 @@ class DecimalMapper(Mapper, bind=decimal.Decimal):
     Mapper for handling decimal values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the decimal value.
 
@@ -609,7 +610,7 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
     Mapper for handling UUID values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the UUID value.
 
@@ -636,7 +637,7 @@ class DateTimeMapper(Mapper, bind=datetime.datetime):
     Mapper for handling datetime values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the datetime value.
 
@@ -663,7 +664,7 @@ class DateMapper(Mapper, bind=datetime.date):
     Mapper for handling date values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the date value.
 
@@ -677,6 +678,8 @@ class DateMapper(Mapper, bind=datetime.date):
             TypeError: If validation fails due to incorrect data type.
 
         """
+        if isinstance(value, datetime.datetime):
+            value = value.date()
         if not isinstance(value, datetime.date):
             raise TypeError(f'Invalid data type {type(value)}, required is {datetime.date}')
         return value
@@ -684,13 +687,16 @@ class DateMapper(Mapper, bind=datetime.date):
     def dump_json(self, value, **options) -> typing.Any:
         return value.isoformat()
 
+    def dump_bson(self, value, **options) -> typing.Any:
+        return datetime.datetime.combine(date=value, time=datetime.time.min)
+
 
 class TimeMapper(Mapper, bind=datetime.time):
     """
     Mapper for handling timedelta values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the timedelta value.
 
@@ -704,6 +710,8 @@ class TimeMapper(Mapper, bind=datetime.time):
             TypeError: If validation fails due to incorrect data type.
 
         """
+        if isinstance(value, datetime.datetime):
+            value = value.time()
         if not isinstance(value, datetime.time):
             raise TypeError(f'Invalid data type {type(value)}, required is {datetime.time}')
         return value
@@ -711,77 +719,68 @@ class TimeMapper(Mapper, bind=datetime.time):
     def dump_json(self, value, **options) -> typing.Any:
         return value.isoformat()
 
+    def dump_bson(self, value, **options) -> typing.Any:
+        return datetime.datetime.combine(date=datetime.datetime.min, time=value)
 
-class IpV4Mapper(StrMapper, bind=types.IpV4):
 
-    def __validate_value__(self, value) -> typing.Any:
-        return types.IpV4(super().__validate_value__(value))
+class ConstrainedStrMapper(StrMapper):
+
+    def validate(self, value) -> typing.Any:
+        return self.__bind__(super().validate(value))
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return str(value)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return str(value)
+
+
+class IpV4Mapper(ConstrainedStrMapper, bind=types.IpV4):
+    pass
 
 
 class IpV6Mapper(StrMapper, bind=types.IpV6):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.IpV6(super().__validate_value__(value))
+    pass
 
 
 class PortMapper(StrMapper, bind=types.Port):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Port(super().__validate_value__(value))
+    pass
 
 
 class MacMapper(StrMapper, bind=types.Mac):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Mac(super().__validate_value__(value))
+    pass
 
 
 class PhoneMapper(StrMapper, bind=types.Phone):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Phone(super().__validate_value__(value))
+    pass
 
 
 class EmailMapper(StrMapper, bind=types.Email):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Email(super().__validate_value__(value))
+    pass
 
 
 class CardMapper(StrMapper, bind=types.Card):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Card(super().__validate_value__(value))
+    pass
 
 
 class SsnMapper(StrMapper, bind=types.Ssn):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Ssn(super().__validate_value__(value))
+    pass
 
 
 class HashtagMapper(StrMapper, bind=types.Hashtag):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Hashtag(super().__validate_value__(value))
+    pass
 
 
 class DoiMapper(StrMapper, bind=types.Doi):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Doi(super().__validate_value__(value))
+    pass
 
 
 class UrlMapper(StrMapper, bind=types.Url):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Url(super().__validate_value__(value))
+    pass
 
 
 class VersionMapper(StrMapper, bind=types.Version):
-
-    def __validate_value__(self, value) -> typing.Any:
-        return types.Version(super().__validate_value__(value))
+    pass
 
 
 class GeometryMapper(Mapper):
@@ -791,7 +790,7 @@ class GeometryMapper(Mapper):
     This mapper validates and handles geometry data.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate(self, value) -> typing.Any:
         """
         Validate the value against the mapper.
 

@@ -155,6 +155,22 @@ def build_dereference_pipeline(references: list[Reference], deep: int = 0) -> li
         # noinspection PyProtectedMember,PyTypeChecker
         pipeline.append(
             {
+                # **(
+                #     {
+                #         # Fix for array field not present
+                #         "$addFields": {
+                #             reference.key_name: {
+                #                 "$cond": {
+                #                     "if": {
+                #                         "$ne": [{"$type": f"${reference.key_name}"}, "array"]
+                #                     },
+                #                     "then": [],
+                #                     "else": f"${reference.key_name}"
+                #                 }
+                #             }
+                #         }
+                #     } if reference.is_many else {}
+                # ),
                 "$lookup": {
                     'from': reference.document_cls.__collection_name__,
                     'let': {"fk": f"${reference.key_name}"},
@@ -164,7 +180,7 @@ def build_dereference_pipeline(references: list[Reference], deep: int = 0) -> li
                                 "$expr": match_exp
                             }
                         },
-                        build_dereference_pipeline(
+                        *build_dereference_pipeline(
                             reference.document_cls.__references__.values(),
                             deep=deep - 1
                         ),
@@ -185,3 +201,27 @@ def build_dereference_pipeline(references: list[Reference], deep: int = 0) -> li
                 }
             )
     return pipeline
+
+
+def get_reverse_references(
+        document_cls: typing.Type['documents.Document']
+) -> dict[typing.Type['documents.Document'], dict[str, Reference]]:
+    from mongotoy import documents
+
+    # Check all documents
+    rev_references = {}
+    for ref_document_cls in cache.documents.get_all_types():
+        # Not is a Document class
+        if not issubclass(ref_document_cls, documents.Document):
+            continue
+
+        # Match references
+        refs = {
+            field_name: reference
+            for field_name, reference in ref_document_cls.__references__.items()
+            if reference.document_cls is document_cls
+        }
+        if refs:
+            rev_references[ref_document_cls] = refs
+
+    return rev_references

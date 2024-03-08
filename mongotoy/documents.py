@@ -132,9 +132,9 @@ class DocumentMeta(BaseDocumentMeta):
                 _references[field.name] = references.Reference(
                     document_cls=field_mapper._document_cls,
                     ref_field=field_mapper._ref_field,
-                    key_name=field_mapper._key_name,
+                    key_name=field_mapper._key_name or f'{field.alias}_ref',
                     is_many=is_many,
-                    name=field.name
+                    name=field.alias
                 )
 
         if not _id_field:
@@ -256,7 +256,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         self,
         by_alias: bool = False,
         exclude_null: bool = False,
-        **options
+        **_
     ) -> dict:
         """
         Dumps the document data to JSON format.
@@ -282,7 +282,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         self,
         by_alias: bool = True,
         exclude_null: bool = False,
-        **options
+        **_
     ) -> bson.SON:
         """
         Dumps the document data to BSON format.
@@ -290,7 +290,6 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         Args:
             by_alias (bool): Flag to dump by alias.
             exclude_null (bool): Flag to exclude null fields.
-            **options: Additional options.
 
         Returns:
             bson.SON: The dumped data.
@@ -341,3 +340,24 @@ class Document(BaseDocument, metaclass=DocumentMeta):
 
     __collection_name__ = None
     document_config = DocumentConfig()
+
+    def __eq__(self, other):
+        return getattr(self, 'id') == getattr(other, 'id', None)
+
+    def dump_bson(
+        self,
+        by_alias: bool = True,
+        exclude_null: bool = False,
+        **options
+    ) -> bson.SON:
+        son = super().dump_bson(by_alias, exclude_null, **options)
+
+        for field, reference in self.__references__.items():
+            field = self.__fields__[field]
+            key = field.alias if by_alias else field.name
+            value = son.pop(key, expressions.EmptyValue)
+            if value is expressions.EmptyValue:
+                continue
+            son[reference.key_name] = value
+
+        return son

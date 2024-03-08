@@ -64,6 +64,10 @@ class TypesCache:
         """
         return self._cache.get(self._prepare_key(type_))
 
+    def get_all_types(self) -> list[typing.Type]:
+        # noinspection PyTypeChecker
+        return self._cache.values()
+
 
 # Singleton instances
 documents = TypesCache()

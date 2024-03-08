@@ -3,7 +3,6 @@ from typing import Literal
 
 import pymongo
 
-
 EmptyValue = type('EmptyValue', (), {})()
 IndexType = Literal[-1, 1, '2d', '2dsphere', 'hashed', 'text']
 
@@ -258,3 +257,27 @@ class Query(dict[str, list | dict]):
             Query: The regex query expression.
         """
         return cls({str(field): {'$regex': value}})
+
+
+# noinspection PyPep8Naming
+def Q(**kwargs) -> Query:
+    """
+    Constructor function to create Query expression.
+
+    Args:
+        **kwargs: Keyword arguments specifying field names and operator specifications.
+    """
+    q = Query()
+    for key, value in kwargs.items():
+        args = key.split('__')
+
+        # Split field and operator i.e. address__street__eq -> address.street eq
+        field = '.'.join(args[:-1])
+        operator = args[-1:][0]
+
+        # Get operator function
+        operator = getattr(Query, operator.lower().capitalize())
+        # Concat query expressions
+        q = q & operator(field, value)
+
+    return q
