@@ -108,7 +108,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def dump_dict(self, value, **options) -> typing.Any:
         """
-        Dump the value to a dictionary.
+        Dump the value to be in a dictionary.
 
         Args:
             value: The value to be dumped.
@@ -122,7 +122,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def dump_json(self, value, **options) -> typing.Any:
         """
-        Dump the value to JSON.
+        Dump the value to valid JSON.
 
         Args:
             value: The value to be dumped.
@@ -136,7 +136,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def dump_bson(self, value, **options) -> typing.Any:
         """
-        Dump the value to BSON.
+        Dump the value to valid BSON.
 
         Args:
             value: The value to be dumped.
@@ -149,9 +149,9 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
         return value
 
 
-class ListMapper(Mapper):
+class ManyMapper(Mapper):
     """
-    Mapper for handling lists.
+    Mapper for handling lists of elements.
     """
 
     def __init__(
@@ -162,15 +162,16 @@ class ListMapper(Mapper):
         default_factory: typing.Callable[[], typing.Any] = None,
     ):
         """
-        Initialize the ListMapper.
+        Initialize the ManyMapper.
 
         Args:
             mapper (Mapper): The mapper for the list items.
 
         """
         self._mapper = mapper
-        # List must be at least empty list not an EmptyValue at all
-        default = [] if default is expressions.EmptyValue else default
+        # ManyMapper must be at least empty list not an EmptyValue for ReferencedDocumentMapper
+        if default is expressions.EmptyValue and isinstance(self.unwrap(), ReferencedDocumentMapper):
+            default = []
         super().__init__(nullable, default, default_factory)
 
     @property
@@ -183,6 +184,13 @@ class ListMapper(Mapper):
 
         """
         return self._mapper
+
+    def unwrap(self) -> Mapper:
+        """Get the innermost mapper that isn't a ManyMapper"""
+        mapper_ = self.mapper
+        while isinstance(mapper_, ManyMapper):
+            mapper_ = mapper_.mapper
+        return mapper_
 
     def validate(self, value) -> typing.Any:
         """
@@ -198,11 +206,12 @@ class ListMapper(Mapper):
             ValidationError: If validation fails.
 
         """
-        if not isinstance(value, list):
-            raise TypeError(f'Invalid data type {type(value)}, required is {list}')
+        if not isinstance(value, self.__bind__):
+            raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
 
         new_value = []
         errors = []
+        # noinspection PyTypeChecker
         for i, val in enumerate(value):
             try:
                 new_value.append(self.mapper(val))
@@ -211,7 +220,7 @@ class ListMapper(Mapper):
         if errors:
             raise ValidationError(errors=errors)
 
-        return new_value
+        return self.__bind__(new_value)
 
     def dump_dict(self, value, **options) -> typing.Any:
         """
@@ -225,7 +234,7 @@ class ListMapper(Mapper):
             Any: The dumped list value.
 
         """
-        return [self.mapper.dump_dict(i, **options) for i in value]
+        return self.__bind__([self.mapper.dump_dict(i, **options) for i in value])
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -254,6 +263,24 @@ class ListMapper(Mapper):
 
         """
         return [self.mapper.dump_bson(i, **options) for i in value]
+
+
+class ListMapper(ManyMapper, bind=list):
+    """
+    Mapper for handling lists.
+    """
+
+
+class TupleMapper(ManyMapper, bind=tuple):
+    """
+    Mapper for handling tuples.
+    """
+
+
+class SetMapper(ManyMapper, bind=set):
+    """
+    Mapper for handling sets.
+    """
 
 
 class EmbeddedDocumentMapper(Mapper):
@@ -487,7 +514,7 @@ class BoolMapper(Mapper, bind=bool):
         return value
 
 
-class BinMapper(Mapper, bind=bytes):
+class BinaryMapper(Mapper, bind=bytes):
     """
     Mapper for handling binary values.
     """
@@ -723,67 +750,73 @@ class TimeMapper(Mapper, bind=datetime.time):
         return datetime.datetime.combine(date=datetime.datetime.min, time=value)
 
 
-class ConstrainedStrMapper(StrMapper):
+class CustomTypeMapper(Mapper, abc.ABC):
+
+    def dump_dict(self, value, **options) -> typing.Any:
+        return value.dump_dict(value, **options)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return value.dump_json(value, **options)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return value.dump_bson(value, **options)
+
+
+class ConstrainedStrMapper(StrMapper, CustomTypeMapper):
 
     def validate(self, value) -> typing.Any:
         return self.__bind__(super().validate(value))
-
-    def dump_json(self, value, **options) -> typing.Any:
-        return str(value)
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        return str(value)
 
 
 class IpV4Mapper(ConstrainedStrMapper, bind=types.IpV4):
     pass
 
 
-class IpV6Mapper(StrMapper, bind=types.IpV6):
+class IpV6Mapper(ConstrainedStrMapper, bind=types.IpV6):
     pass
 
 
-class PortMapper(StrMapper, bind=types.Port):
+class PortMapper(ConstrainedStrMapper, bind=types.Port):
     pass
 
 
-class MacMapper(StrMapper, bind=types.Mac):
+class MacMapper(ConstrainedStrMapper, bind=types.Mac):
     pass
 
 
-class PhoneMapper(StrMapper, bind=types.Phone):
+class PhoneMapper(ConstrainedStrMapper, bind=types.Phone):
     pass
 
 
-class EmailMapper(StrMapper, bind=types.Email):
+class EmailMapper(ConstrainedStrMapper, bind=types.Email):
     pass
 
 
-class CardMapper(StrMapper, bind=types.Card):
+class CardMapper(ConstrainedStrMapper, bind=types.Card):
     pass
 
 
-class SsnMapper(StrMapper, bind=types.Ssn):
+class SsnMapper(ConstrainedStrMapper, bind=types.Ssn):
     pass
 
 
-class HashtagMapper(StrMapper, bind=types.Hashtag):
+class HashtagMapper(ConstrainedStrMapper, bind=types.Hashtag):
     pass
 
 
-class DoiMapper(StrMapper, bind=types.Doi):
+class DoiMapper(ConstrainedStrMapper, bind=types.Doi):
     pass
 
 
-class UrlMapper(StrMapper, bind=types.Url):
+class UrlMapper(ConstrainedStrMapper, bind=types.Url):
     pass
 
 
-class VersionMapper(StrMapper, bind=types.Version):
+class VersionMapper(ConstrainedStrMapper, bind=types.Version):
     pass
 
 
-class GeometryMapper(Mapper):
+class GeometryMapper(CustomTypeMapper):
     """
     Mapper class for geometry data.
 
@@ -809,30 +842,6 @@ class GeometryMapper(Mapper):
         if not isinstance(value, types.Point):
             raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
         return value
-
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Convert the value to JSON format.
-
-        Args:
-            value (Any): The value to be converted.
-
-        Returns:
-            Any: The JSON representation of the value.
-        """
-        return value.dump_geojson()
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        """
-        Convert the value to BSON format.
-
-        Args:
-            value (Any): The value to be converted.
-
-        Returns:
-            Any: The BSON representation of the value.
-        """
-        return value.dump_geojson()
 
 
 class PointMapper(GeometryMapper, bind=types.Point):

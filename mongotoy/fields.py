@@ -179,16 +179,19 @@ class Field:
             options['nullable'] = True
             return cls._build_mapper(mapper_bind, **options)
 
-        # Create mapper for list type
-        if type_origin is list:
-            return mappers.ListMapper(
+        # Create many mapper
+        if type_origin in (list, tuple, set):
+            mapper_cls = cache.mappers.get_type(type_origin)
+            return mapper_cls(
                 nullable=options.pop('nullable', False),
                 default=options.pop('default', expressions.EmptyValue),
                 default_factory=options.pop('default_factory', None),
                 mapper=cls._build_mapper(mapper_bind, **options)
             )
 
-        raise TypeError(f'Invalid outer annotation {type_origin}, allowed are [{list}, {typing.Optional}]')
+        raise TypeError(
+            f'Invalid outer annotation {type_origin}, allowed are [{list, tuple, set}, {typing.Optional}]'
+        )
 
     @classmethod
     def from_annotated_type(cls, anno_type: typing.Type, info: dict) -> 'Field':
@@ -465,10 +468,11 @@ class FieldProxy:
         Raises:
             FieldError: If the nested field is not found in the document.
         """
-        # Unwrap ListMapper
+        # Unwrap ManyMapper
         mapper = self._field.mapper
-        if isinstance(mapper, mappers.ListMapper):
-            mapper = mapper.mapper
+        if isinstance(mapper, mappers.ManyMapper):
+            mapper = mapper.unwrap()
+
         # Unwrap EmbeddedDocumentMapper or ReferencedDocumentMapper
         if isinstance(mapper, (mappers.EmbeddedDocumentMapper, mappers.ReferencedDocumentMapper)):
             mapper = mapper.document_cls

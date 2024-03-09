@@ -8,9 +8,8 @@ from motor.core import AgnosticClient, AgnosticDatabase, AgnosticCollection, Agn
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.read_concern import ReadConcern
 
-from mongotoy import documents, mappers, expressions, references, errors, cache
+from mongotoy import documents, mappers, expressions, references, errors
 from mongotoy.errors import EngineError
-
 
 __all__ = (
     'Engine',
@@ -161,10 +160,10 @@ class Engine:
                     )
                 indexes.append(pymongo.IndexModel(i_new_keys, **i_doc))
 
-            # Unwrap ListMapper
+            # Unwrap ManyMapper
             mapper = field.mapper
-            if isinstance(mapper, mappers.ListMapper):
-                mapper = mapper.mapper
+            if isinstance(mapper, mappers.ManyMapper):
+                mapper = mapper.unwrap()
 
             # Add Geo Index
             if isinstance(
@@ -721,7 +720,7 @@ class Objects(typing.Generic[T]):
                     # Get reference value
                     value = getattr(ref_doc, field_name)
                     if value:
-                        # Wipe doc from references
+                        # Wipe doc from value
                         value = [
                             i for i in value
                             if getattr(i, reference.ref_field.name) != getattr(doc, reference.ref_field.name)

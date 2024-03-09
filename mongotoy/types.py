@@ -1,11 +1,70 @@
 
 import collections
 import re
+import typing
 
 from mongotoy import geodata
 
 
-class IpV4(collections.UserString):
+# noinspection PyMethodMayBeStatic
+class CustomType:
+
+    def dump_dict(self, value, **options) -> typing.Any:
+        """
+        Dump the value to be in a dictionary.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the value to valid JSON.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return value
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        """
+        Dump the value to valid BSON.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return value
+
+
+class ConstrainedStr(collections.UserString, CustomType):
+
+    def dump_dict(self, value, **options) -> typing.Any:
+        return str(value)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return self.dump_dict(value, **options)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return self.dump_dict(value, **options)
+
+
+class IpV4(ConstrainedStr):
     """
     Represents an IPv4 address.
 
@@ -24,7 +83,7 @@ class IpV4(collections.UserString):
         super().__init__(value)
 
 
-class IpV6(collections.UserString):
+class IpV6(ConstrainedStr):
     """
     Represents an IPv6 address.
 
@@ -51,7 +110,7 @@ class IpV6(collections.UserString):
         super().__init__(value)
 
 
-class Port(collections.UserString):
+class Port(ConstrainedStr):
     """
     Represents a port number.
 
@@ -71,7 +130,7 @@ class Port(collections.UserString):
         super().__init__(value)
 
 
-class Mac(collections.UserString):
+class Mac(ConstrainedStr):
     """
     Represents a MAC address.
 
@@ -90,7 +149,7 @@ class Mac(collections.UserString):
         super().__init__(value)
 
 
-class Phone(collections.UserString):
+class Phone(ConstrainedStr):
     """
     Represents a phone number.
 
@@ -110,7 +169,7 @@ class Phone(collections.UserString):
         super().__init__(value)
 
 
-class Email(collections.UserString):
+class Email(ConstrainedStr):
     """
     Represents an email address.
 
@@ -131,7 +190,7 @@ class Email(collections.UserString):
         super().__init__(value)
 
 
-class Card(collections.UserString):
+class Card(ConstrainedStr):
     """
     Represents a credit card number.
 
@@ -153,7 +212,7 @@ class Card(collections.UserString):
         super().__init__(value)
 
 
-class Ssn(collections.UserString):
+class Ssn(ConstrainedStr):
     """
     Represents a Social Security Number (SSN).
 
@@ -172,7 +231,7 @@ class Ssn(collections.UserString):
         super().__init__(value)
 
 
-class Hashtag(collections.UserString):
+class Hashtag(ConstrainedStr):
     """
     Represents a hashtag.
 
@@ -191,7 +250,7 @@ class Hashtag(collections.UserString):
         super().__init__(value)
 
 
-class Doi(collections.UserString):
+class Doi(ConstrainedStr):
     """
     Represents a Digital Object Identifier (DOI).
 
@@ -211,7 +270,7 @@ class Doi(collections.UserString):
         super().__init__(value)
 
 
-class Url(collections.UserString):
+class Url(ConstrainedStr):
     """
     Represents a URL.
 
@@ -232,7 +291,7 @@ class Url(collections.UserString):
         super().__init__(value)
 
 
-class Version(collections.UserString):
+class Version(ConstrainedStr):
     """
     Represents a Semantic Version Number.
 
@@ -253,7 +312,22 @@ class Version(collections.UserString):
         super().__init__(value)
 
 
-class Point(geodata.Position, geodata.Geometry):
+class GeometryType(CustomType):
+
+    def dump_dict(self, value, **options) -> typing.Any:
+        return {
+            'type': self.__class__.__name__,
+            'coordinates': self
+        }
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return self.dump_dict(value, **options)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return self.dump_dict(value, **options)
+
+
+class Point(geodata.Position, GeometryType):
     """
     For type "Point", the "coordinates" member is a single position.
 
@@ -266,7 +340,7 @@ class Point(geodata.Position, geodata.Geometry):
         super().__init__(*coordinates)
 
 
-class MultiPoint(list[Point], geodata.Geometry):
+class MultiPoint(list[Point], GeometryType):
     """
     For type "MultiPoint", the "coordinates" member is an array of
     positions.
@@ -278,7 +352,7 @@ class MultiPoint(list[Point], geodata.Geometry):
         super().__init__([Point(*i) for i in points])
 
 
-class LineString(list[Point], geodata.Geometry):
+class LineString(list[Point], GeometryType):
     """
     For type "LineString", the "coordinates" member is an array of two or
     more positions.
@@ -292,7 +366,7 @@ class LineString(list[Point], geodata.Geometry):
         super().__init__([Point(*i) for i in points])
 
 
-class MultiLineString(list[LineString], geodata.Geometry):
+class MultiLineString(list[LineString], GeometryType):
     """
     For type "MultiLineString", the "coordinates" member is an array of
     LineString coordinate arrays.
@@ -304,7 +378,7 @@ class MultiLineString(list[LineString], geodata.Geometry):
         super().__init__([LineString(*i) for i in lines])
 
 
-class Polygon(list[LineString], geodata.Geometry):
+class Polygon(list[LineString], GeometryType):
     """
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
     """
@@ -313,7 +387,7 @@ class Polygon(list[LineString], geodata.Geometry):
         super().__init__([geodata.LinearRing(*i) for i in rings])
 
 
-class MultiPolygon(list[Polygon], geodata.Geometry):
+class MultiPolygon(list[Polygon], GeometryType):
     """
      For type "MultiPolygon", the "coordinates" member is an array of
      Polygon coordinate arrays.

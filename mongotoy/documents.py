@@ -119,21 +119,21 @@ class DocumentMeta(BaseDocumentMeta):
                     )
                 _id_field = field
 
-            # Unwrap ListMapper
-            field_mapper = field.mapper
-            is_many = False
-            if isinstance(field_mapper, mappers.ListMapper):
-                field_mapper = field_mapper.mapper
-                is_many = True
+            # Unwrap ManyMapper
+            _mapper = field.mapper
+            _is_many = False
+            if isinstance(_mapper, mappers.ManyMapper):
+                _mapper = _mapper.unwrap()
+                _is_many = True
 
             # Add references
-            if isinstance(field_mapper, mappers.ReferencedDocumentMapper):
+            if isinstance(_mapper, mappers.ReferencedDocumentMapper):
                 # noinspection PyProtectedMember,PyUnresolvedReferences
                 _references[field.name] = references.Reference(
-                    document_cls=field_mapper._document_cls,
-                    ref_field=field_mapper._ref_field,
-                    key_name=field_mapper._key_name or f'{field.alias}_ref',
-                    is_many=is_many,
+                    document_cls=_mapper._document_cls,
+                    ref_field=_mapper._ref_field,
+                    key_name=_mapper._key_name or f'{field.alias}_ref',
+                    is_many=_is_many,
                     name=field.alias
                 )
 

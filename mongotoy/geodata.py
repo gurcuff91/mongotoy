@@ -1,7 +1,10 @@
 import typing
 
+if typing.TYPE_CHECKING:
+    from mongotoy.types import GeometryType
 
-def parse_geojson(geojson: dict, parser: typing.Type['Geometry']) -> 'Geometry':
+
+def parse_geojson(geojson: dict, parser: typing.Type['GeometryType']) -> 'GeometryType':
     """
     Parse a GeoJSON dictionary using a given geometry parser.
 
@@ -24,27 +27,6 @@ def parse_geojson(geojson: dict, parser: typing.Type['Geometry']) -> 'Geometry':
 
     # noinspection PyArgumentList
     return parser(*geojson['coordinates'])
-
-
-class Geometry:
-    """
-    Base class for geometries.
-
-    Methods:
-        dump_geojson: Dump the geometry to a GeoJSON dictionary.
-    """
-
-    def dump_geojson(self) -> dict:
-        """
-        Dump the geometry to a GeoJSON dictionary.
-
-        Returns:
-            dict: The GeoJSON representation of the geometry.
-        """
-        return {
-            'type': self.__class__.__name__,
-            'coordinates': self
-        }
 
 
 class Position(list[int | float]):
