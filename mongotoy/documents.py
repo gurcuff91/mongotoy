@@ -7,7 +7,7 @@ import bson
 import pymongo
 from pymongo.read_concern import ReadConcern
 
-from mongotoy import fields, references, cache, mappers, expressions
+from mongotoy import cache, expressions, references, fields, mappers
 from mongotoy.errors import DocumentError, ValidationError, DocumentValidationError
 
 __all__ = (
@@ -132,7 +132,7 @@ class DocumentMeta(BaseDocumentMeta):
                 _references[field.name] = references.Reference(
                     document_cls=_mapper._document_cls,
                     ref_field=_mapper._ref_field,
-                    key_name=_mapper._key_name or f'{field.alias}_ref',
+                    key_name=_mapper._key_name or f'{field.alias}_{_mapper._ref_field}',
                     is_many=_is_many,
                     name=field.alias
                 )
@@ -160,6 +160,7 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
     Base class for document.
     """
     if TYPE_CHECKING:
+        from mongotoy import fields
         __fields__: dict[str, fields.Field]
         __data__: dict[str, Any]
 

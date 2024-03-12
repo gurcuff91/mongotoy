@@ -1,9 +1,18 @@
 
 import collections
+import contextlib
+import datetime
+import io
 import re
 import typing
 
+import bson
+import gridfs
+
 from mongotoy import geodata
+
+if typing.TYPE_CHECKING:
+    from mongotoy import db
 
 
 # noinspection PyMethodMayBeStatic
@@ -54,14 +63,11 @@ class CustomType:
 
 class ConstrainedStr(collections.UserString, CustomType):
 
-    def dump_dict(self, value, **options) -> typing.Any:
+    def dump_json(self, value, **options) -> typing.Any:
         return str(value)
 
-    def dump_json(self, value, **options) -> typing.Any:
-        return self.dump_dict(value, **options)
-
     def dump_bson(self, value, **options) -> typing.Any:
-        return self.dump_dict(value, **options)
+        return str(value)
 
 
 class IpV4(ConstrainedStr):
@@ -397,3 +403,53 @@ class MultiPolygon(list[Polygon], GeometryType):
 
     def __init__(self, *polygons: Polygon):
         super().__init__([Polygon(*i) for i in polygons])
+
+
+class Json(dict, CustomType):
+    """
+    Represents a valid json data.
+    """
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return bson.SON(value)
+
+
+class Bson(bson.SON, CustomType):
+    """
+    Represents a valid bson data.
+    """
+
+    def dump_dict(self, value, **options) -> typing.Any:
+        return dict(value)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        # noinspection SpellCheckingInspection
+        raise NotImplementedError(
+            'mongotoy.types.Bson does not implement dump_json, use mongotoy.types.Json instead'
+        )
+
+
+class File(typing.Protocol):
+    id: bson.ObjectId
+    filename: str
+    metadata: Json
+    chunk_size: int
+    length: int
+    upload_date: datetime.datetime
+
+    async def upload(self, fs: 'db.FsBucket', source):
+        pass
+
+    @contextlib.asynccontextmanager
+    async def open_upload(self, fs: 'db.FsBucket') -> typing.AsyncContextManager[gridfs.GridIn]:
+        pass
+
+    async def download(self, fs: 'db.FsBucket') -> io.BytesIO:
+        pass
+
+    @contextlib.asynccontextmanager
+    async def open_download(self, fs: 'db.FsBucket') -> typing.AsyncContextManager[gridfs.GridOut]:
+        pass
+
+    async def delete(self, fs: 'db.FsBucket'):
+        pass

@@ -115,7 +115,7 @@ class Field:
 
     # Method for building a mapper based on annotations
     @classmethod
-    def _build_mapper(cls, mapper_bind: typing.Type, **options) -> 'mappers.Mapper':
+    def _build_mapper(cls, mapper_bind: typing.Type, **options) -> mappers.Mapper:
         """
         Build a data mapper based on annotations.
 
@@ -219,7 +219,7 @@ class Field:
         )
 
     @property
-    def mapper(self) -> 'mappers.Mapper':
+    def mapper(self) -> mappers.Mapper:
         """
         Get the mapper associated with the field.
 

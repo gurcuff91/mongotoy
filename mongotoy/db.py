@@ -1,15 +1,20 @@
 import asyncio
+import contextlib
+import datetime
 import functools
+import mimetypes
 import typing
 
 import bson
+import gridfs
 import pymongo
 from motor.core import AgnosticClient, AgnosticDatabase, AgnosticCollection, AgnosticClientSession
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from motor.motor_gridfs import AgnosticGridFSBucket
 from pymongo.read_concern import ReadConcern
 
-from mongotoy import documents, mappers, expressions, references, errors
-from mongotoy.errors import EngineError
+from mongotoy import documents, expressions, references, fields, types
+from mongotoy.errors import EngineError, NoResultsError, ManyResultsError
 
 __all__ = (
     'Engine',
@@ -78,7 +83,9 @@ class Engine:
         self._read_concern = read_concern
         self._write_concern = write_concern
         self._db_client = None
-        self._collections = []
+        self._collections = [
+            # FsBucket.collection_name
+        ]
         self._lock = asyncio.Lock()
 
     async def connect(self, *conn, ping: bool = False):
@@ -92,7 +99,11 @@ class Engine:
         self._db_client = AsyncIOMotorClient(*conn)
         if ping:
             await self._db_client.admin.command({'ping': 1})
-        self._collections = await self._db_client[self._database].list_collection_names()
+
+        # Get current db collections names
+        self._collections.extend(
+            await self._db_client[self._database].list_collection_names()
+        )
 
     @property
     def client(self) -> AgnosticClient:
@@ -141,11 +152,59 @@ class Engine:
         """
         return Transaction(provider=self)
 
-    def indexes(
+    def _get_document_collection(self, document_cls: typing.Type[T]) -> AgnosticCollection:
+        config = document_cls.document_config
+        # noinspection PyTypeChecker
+        return self.database[document_cls.__collection_name__].with_options(
+            codec_options=config.codec_options or self._codec_options,
+            read_preference=config.read_preference or self._read_preference,
+            read_concern=config.read_concern or self._read_concern,
+            write_concern=config.write_concern or self._write_concern
+        )
+
+    async def _create_document_collection(self, document_cls: typing.Type[T], session: 'Session' = None):
+        config = document_cls.document_config
+        driver_session = session.driver_session if session else None
+        options = {'check_exists': False}
+
+        # Configure options for capped collections
+        if config.capped:
+            options['capped'] = True
+            options['size'] = config.capped_size
+            if config.capped_max:
+                options['max'] = config.capped_max
+
+        # Configure options for timeseries collections
+        if config.timeseries_field:
+            timeseries = {
+                'timeField': config.timeseries_field,
+                'granularity': config.timeseries_granularity
+            }
+            if config.timeseries_meta_field:
+                timeseries['metaField'] = config.timeseries_meta_field
+
+            options['timeseries'] = timeseries
+            if config.timeseries_expire_after_seconds:
+                options['expireAfterSeconds'] = config.timeseries_expire_after_seconds
+
+        # Create the collection with configured options
+        await self.database.create_collection(
+            name=document_cls.__collection_name__,
+            codec_options=config.codec_options or self._codec_options,
+            read_preference=config.read_preference or self._read_preference,
+            read_concern=config.read_concern or self._read_concern,
+            write_concern=config.write_concern or self._write_concern,
+            session=driver_session,
+            **options
+        )
+
+    def _get_document_indexes(
         self,
         document_cls: typing.Type[documents.BaseDocument],
         parent: str = None
     ) -> list[pymongo.IndexModel]:
+        from mongotoy import mappers
+
         indexes = []
         for field in document_cls.__fields__.values():
             # Add index field
@@ -182,73 +241,97 @@ class Engine:
 
             # Add EmbeddedDocument indexes
             if isinstance(mapper, mappers.EmbeddedDocumentMapper):
-                indexes.extend(self.indexes(mapper.document_cls, parent=field.alias))
+                indexes.extend(self._get_document_indexes(mapper.document_cls, parent=field.alias))
 
         return indexes
 
-    async def collection(self, document_cls: typing.Type[T], session: 'Session' = None) -> AgnosticCollection:
-        await self._lock.acquire()
-        config = document_cls.document_config
-        coll_name = document_cls.__collection_name__
-
-        # Check if the collection already exists
-        if coll_name in self._collections:
-            self._lock.release()
-
-            return self.database.get_collection(
-                name=coll_name,
-                codec_options=config.codec_options or self._codec_options,
-                read_preference=config.read_preference or self._read_preference,
-                read_concern=config.read_concern or self._read_concern,
-                write_concern=config.write_concern or self._write_concern
-            )
-
-        options = {'check_exists': False}
+    async def _create_document_indexes(self, document_cls: typing.Type[T], session: 'Session' = None):
+        indexes = self._get_document_indexes(document_cls)
+        collection = self._get_document_collection(document_cls)
         driver_session = session.driver_session if session else None
+        if indexes:
+            await collection.create_indexes(indexes, session=driver_session)
 
-        # Configure options for capped collections
-        if config.capped:
-            options['capped'] = True
-            options['size'] = config.capped_size
-            if config.capped_max:
-                options['max'] = config.capped_max
+    # async def collection(self, document_cls: typing.Type[T], session: 'Session' = None) -> AgnosticCollection:
+    #     await self._lock.acquire()
+    #     config = document_cls.document_config
+    #     coll_name = document_cls.__collection_name__
+    #
+    #     # Check if the collection already exists
+    #     if coll_name in self._collections:
+    #         self._lock.release()
+    #
+    #         return self.database.get_collection(
+    #             name=coll_name,
+    #             codec_options=config.codec_options or self._codec_options,
+    #             read_preference=config.read_preference or self._read_preference,
+    #             read_concern=config.read_concern or self._read_concern,
+    #             write_concern=config.write_concern or self._write_concern
+    #         )
+    #
+    #     options = {'check_exists': False}
+    #     driver_session = session.driver_session if session else None
+    #
+    #     # Configure options for capped collections
+    #     if config.capped:
+    #         options['capped'] = True
+    #         options['size'] = config.capped_size
+    #         if config.capped_max:
+    #             options['max'] = config.capped_max
+    #
+    #     # Configure options for timeseries collections
+    #     if config.timeseries_field:
+    #         timeseries = {
+    #             'timeField': config.timeseries_field,
+    #             'granularity': config.timeseries_granularity
+    #         }
+    #         if config.timeseries_meta_field:
+    #             timeseries['metaField'] = config.timeseries_meta_field
+    #
+    #         options['timeseries'] = timeseries
+    #         if config.timeseries_expire_after_seconds:
+    #             options['expireAfterSeconds'] = config.timeseries_expire_after_seconds
+    #
+    #     # Create the collection with configured options
+    #     collection = await self.database.create_collection(
+    #         name=coll_name,
+    #         codec_options=config.codec_options or self._codec_options,
+    #         read_preference=config.read_preference or self._read_preference,
+    #         read_concern=config.read_concern or self._read_concern,
+    #         write_concern=config.write_concern or self._write_concern,
+    #         session=driver_session,
+    #         **options
+    #     )
+    #
+    #     # Create indexes for the collection
+    #     doc_indexes = self._get_document_indexes(document_cls) + config.indexes
+    #     if doc_indexes:
+    #         await collection.create_indexes(
+    #             indexes=doc_indexes,
+    #             session=driver_session
+    #         )
+    #
+    #     # Register the collection name
+    #     self._collections.append(coll_name)
+    #     self._lock.release()
+    #     return collection
 
-        # Configure options for timeseries collections
-        if config.timeseries_field:
-            timeseries = {
-                'timeField': config.timeseries_field,
-                'granularity': config.timeseries_granularity
-            }
-            if config.timeseries_meta_field:
-                timeseries['metaField'] = config.timeseries_meta_field
-
-            options['timeseries'] = timeseries
-            if config.timeseries_expire_after_seconds:
-                options['expireAfterSeconds'] = config.timeseries_expire_after_seconds
-
-        # Create the collection with configured options
-        collection = await self.database.create_collection(
-            name=coll_name,
-            codec_options=config.codec_options or self._codec_options,
-            read_preference=config.read_preference or self._read_preference,
-            read_concern=config.read_concern or self._read_concern,
-            write_concern=config.write_concern or self._write_concern,
-            session=driver_session,
-            **options
+    # noinspection SpellCheckingInspection
+    def gridfs(
+            self,
+            bucket_name: str = 'fs',
+            chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
+    ) -> AgnosticGridFSBucket:
+        return AsyncIOMotorGridFSBucket(
+            database=self.database,
+            bucket_name=bucket_name,
+            chunk_size_bytes=chunk_size_bytes,
+            write_concern=self.database.write_concern,
+            read_preference=self.database.read_preference
         )
 
-        # Create indexes for the collection
-        doc_indexes = self.indexes(document_cls) + config.indexes
-        if doc_indexes:
-            await collection.create_indexes(
-                indexes=doc_indexes,
-                session=driver_session
-            )
-
-        # Register the collection name
-        self._collections.append(coll_name)
-        self._lock.release()
-        return collection
+    def __getitem__(self, document_cls: typing.Type[T]) -> AgnosticCollection:
+        return self._get_document_collection(document_cls)
 
 
 class Session(typing.AsyncContextManager):
@@ -277,6 +360,7 @@ class Session(typing.AsyncContextManager):
     def __init__(self, engine: Engine):
         self._engine = engine
         self._driver_session = None
+        self._apply_lock = asyncio.Lock()
 
     @property
     def engine(self) -> Engine:
@@ -366,11 +450,43 @@ class Session(typing.AsyncContextManager):
         """
         return Transaction(provider=self)
 
+    # noinspection PyProtectedMember
+    async def apply(self, document_cls: typing.Type[T], check_exist: bool = True, with_lock: bool = True):
+        # Lock
+        if with_lock:
+            await self._apply_lock.acquire()
+
+        do_apply = True
+
+        # Check if collection already exist
+        if check_exist:
+            collections = await self.engine.database.list_collection_names(session=self.driver_session)
+            if document_cls.__collection_name__ in collections:
+                do_apply = False
+
+        # Create collection and indexes
+        if do_apply:
+            await self.engine._create_document_collection(document_cls, session=self)
+            await self.engine._create_document_indexes(document_cls, session=self)
+
+        # Unlock
+        if with_lock:
+            self._apply_lock.release()
+
+    async def apply_many(self, documents_cls: list[typing.Type[T]]):
+        async with self._apply_lock:
+            collections = await self.engine.database.list_collection_names(session=self.driver_session)
+            await asyncio.gather(*[
+                self.apply(i, check_exist=False, with_lock=False)
+                for i in documents_cls
+                if i.__collection_name__ not in collections
+            ])
+
     def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
         return Objects(document_cls, session=self, dereference_deep=dereference_deep)
 
-    def files(self):
-        pass  # TODO impl
+    def fs(self, chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE) -> 'FsBucket':
+        return FsBucket(self, chunk_size_bytes=chunk_size_bytes)
 
 
 class Transaction(typing.AsyncContextManager):
@@ -521,26 +637,28 @@ class Objects(typing.Generic[T]):
         self._skip = 0
         self._limit = 0
         self._dereference_deep = dereference_deep
+        # Get driver collection
+        self._collection = session.engine[document_cls]
 
-        # get driver collection helper function
-        self._get_driver_collection = lambda: session.engine.collection(document_cls, session=session)
+    async def create(self, **data) -> T:
+        doc = self._document_cls(**data)
+        await self.save(doc, save_references=True)
+        return doc
 
-    def filter(self, *queries: expressions.Query, **filters: dict) -> 'Objects[T]':
+    def filter(self, *queries: expressions.Query, **filters) -> 'Objects[T]':
         """
         Adds filter conditions to the query set.
 
         Args:
-            *filters (dict): Variable number of filter dictionaries.
+            *filters: Variable number of filters.
 
         Returns:
             QuerySet: The updated query set.
         """
         for q in queries:
             self._filter = self._filter & q
-
         if filters:
             self._filter = self._filter & expressions.Q(**filters)
-
         return self
 
     def sort(self, *sorts: expressions.Sort) -> 'Objects[T]':
@@ -609,8 +727,7 @@ class Objects(typing.Generic[T]):
         if self._limit > 0:
             pipeline.append({'$limit': self._limit})
 
-        collection = await self._get_driver_collection()
-        cursor = collection.aggregate(pipeline, session=self._session.driver_session)
+        cursor = self._collection.aggregate(pipeline, session=self._session.driver_session)
         async for data in cursor:
             yield self._document_cls(**data)
 
@@ -643,10 +760,14 @@ class Objects(typing.Generic[T]):
         """
         docs = await self.limit(2).all(dereference_deep)
         if not docs:
-            raise errors.NoResultsError()
+            raise NoResultsError()
         if len(docs) > 1:
-            raise errors.ManyResultsError()
+            raise ManyResultsError()
         return docs[0]
+
+    # noinspection PyShadowingBuiltins
+    async def get_by_id(self, id: typing.Any) -> T:
+        return await self.filter(_id__eq=id).get()
 
     async def count(self) -> int:
         """
@@ -655,8 +776,7 @@ class Objects(typing.Generic[T]):
         Returns:
             int: The count of documents.
         """
-        collection = await self._get_driver_collection()
-        return await collection.count_documents(self._filter, session=self._session.driver_session)
+        return await self._collection.count_documents(self._filter, session=self._session.driver_session)
 
     async def _save_references(self, doc: T):
         operations = []
@@ -680,10 +800,9 @@ class Objects(typing.Generic[T]):
         if save_references:
             operations.append(self._save_references(doc))
 
-        collection = await self._get_driver_collection()
         son = doc.dump_bson()
         operations.append(
-            collection.update_one(
+            self._collection.update_one(
                 filter=Query.Eq('_id', son.pop('_id')),
                 update={'$set': son},
                 upsert=True,
@@ -746,14 +865,11 @@ class Objects(typing.Generic[T]):
         if delete_cascade:
             operations.append(self._delete_cascade(doc))
 
-        collection = await self._get_driver_collection()
-        operations.append(
-            collection.delete_one(
-                filter=Query.Eq('_id', doc.id),
-                session=self._session.driver_session
-            )
-        )
         await asyncio.gather(*operations)
+        await self._collection.delete_one(
+            filter=Query.Eq('_id', doc.id),
+            session=self._session.driver_session
+        )
 
     async def delete_all(self, docs: list[T], delete_cascade: bool = False):
         ids = []
@@ -767,10 +883,222 @@ class Objects(typing.Generic[T]):
             if delete_cascade:
                 operations.append(self._delete_cascade(doc))
 
-        collection = await self._get_driver_collection()
-        operations.append(
-            collection.delete_many(
-                filter=Query.In('_id', ids)
-            )
-        )
         await asyncio.gather(*operations)
+        await self._collection.delete_many(
+            filter=Query.In('_id', ids),
+            session=self._session.driver_session
+        )
+
+
+# noinspection PyProtectedMember
+class FsBucket:
+    bucket_name = 'fs'
+    collection_name = f'{bucket_name}.files'
+
+    def __init__(
+        self,
+        session: Session,
+        chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
+    ):
+        self._session = session
+        self._collection = session.engine[FsObject]
+        self._bucket = session.engine.gridfs(self.bucket_name, chunk_size_bytes)
+        self._filter = expressions.Query()
+        self._sort = expressions.Sort()
+        self._skip = 0
+        self._limit = 0
+
+    # noinspection PyMethodMayBeStatic
+    async def create(self, filename: str, metadata: dict = None, src=None) -> 'FsObject':
+        # Create metadata
+        metadata = metadata or {}
+        content_type = mimetypes.guess_type(filename, strict=False)[0]
+        if content_type:
+            metadata['contentType'] = content_type
+
+        # Create object
+        obj = FsObject(
+            filename=filename,
+            metadata=metadata
+        )
+        # Upload contents
+        if src:
+            await obj.upload(fs=self, src=src)
+            obj = await self.get_by_id(obj.id)  # update obj info
+
+        return obj
+
+    def filter(self, *queries: expressions.Query, **filters) -> 'FsBucket':
+        """
+        Adds filter conditions to the query set.
+
+        Args:
+            *filters: Variable number of filters.
+
+        Returns:
+            QuerySet: The updated query set.
+        """
+        for q in queries:
+            self._filter = self._filter & q
+        if filters:
+            self._filter = self._filter & expressions.Q(**filters)
+        return self
+
+    def sort(self, *sorts: expressions.Sort) -> 'FsBucket':
+        """
+        Adds sort conditions to the query set.
+
+        Args:
+            *sorts (dict): Variable number of sort dictionaries.
+
+        Returns:
+            QuerySet: The updated query set.
+        """
+        for sort in sorts:
+            self._sort = self._sort | expressions.Sort(sort)
+        return self
+
+    def skip(self, skip: int) -> 'FsBucket':
+        """
+        Sets the number of documents to skip in the result set.
+
+        Args:
+            skip (int): The number of documents to skip.
+
+        Returns:
+            QuerySet: The updated query set.
+        """
+        self._skip = skip
+        return self
+
+    def limit(self, limit: int) -> 'FsBucket':
+        """
+        Sets the maximum number of documents to return.
+
+        Args:
+            limit (int): The maximum number of documents to return.
+
+        Returns:
+            QuerySet: The updated query set.
+        """
+        self._limit = limit
+        return self
+
+    async def __aiter__(self) -> typing.AsyncGenerator['FsObject', None]:
+        """
+        Asynchronously iterates over the result set, executing the query.
+
+        Yields:
+            T: The parsed document instances.
+        """
+        pipeline = []
+        if self._filter:
+            pipeline.append({'$match': self._filter})
+        if self._sort:
+            pipeline.append({'$sort': self._sort})
+        if self._skip > 0:
+            pipeline.append({'$skip': self._skip})
+        if self._limit > 0:
+            pipeline.append({'$limit': self._limit})
+
+        cursor = self._collection.aggregate(pipeline, session=self._session.driver_session)
+        async for data in cursor:
+            yield FsObject(**data)
+
+    async def all(self) -> list['FsObject']:
+        """
+        Retrieves all documents in the result set.
+
+        Returns:
+            list[FsObject]: The list of parsed document instances.
+        """
+        return [doc async for doc in self]
+
+    async def get(self) -> 'FsObject':
+        """
+        Retrieves a specific document in the result set.
+
+        Returns:
+            T: The parsed document instance.
+
+        Raises:
+            NoResultsError: If no results are found.
+            ManyResultsError: If more than one result is found.
+        """
+        docs = await self.limit(2).all()
+        if not docs:
+            raise NoResultsError()
+        if len(docs) > 1:
+            raise ManyResultsError()
+        return docs[0]
+
+    # noinspection PyShadowingBuiltins
+    async def get_by_id(self, id: typing.Any) -> 'FsObject':
+        return await self.filter(_id__eq=id).get()
+
+    async def count(self) -> int:
+        """
+        Counts the number of documents in the result set.
+
+        Returns:
+            int: The count of documents.
+        """
+        return await self._collection.count_documents(
+            self._filter,
+            session=self._session.driver_session
+        )
+
+
+# noinspection PyProtectedMember
+class FsObject(documents.Document):
+    filename: str
+    metadata: types.Json
+    chunk_size: int = fields.field(alias='chunkSize')
+    length: int
+    upload_date: datetime.datetime = fields.field(alias='uploadDate')
+
+    __collection_name__ = FsBucket.collection_name
+
+    async def upload(self, fs: FsBucket, src):
+        await fs._bucket.upload_from_stream_with_id(
+            file_id=self.id,
+            filename=self.filename,
+            source=src,
+            metadata=self.metadata,
+            session=fs._session.driver_session
+        )
+
+    @contextlib.asynccontextmanager
+    async def open_upload(self, fs: FsBucket) -> typing.AsyncContextManager[gridfs.GridIn]:
+        grid_in = fs._bucket.open_upload_stream_with_id(
+            file_id=self.id,
+            filename=self.filename,
+            metadata=self.metadata,
+            session=fs._session.driver_session
+        )
+        try:
+            yield grid_in
+        finally:
+            await grid_in.close()
+
+    # noinspection SpellCheckingInspection
+    async def download(self, fs: FsBucket, dest):
+        await fs._bucket.download_to_stream(
+            file_id=self.id,
+            destination=dest,
+            session=fs._session.driver_session
+        )
+
+    @contextlib.asynccontextmanager
+    async def open_download(self, fs: FsBucket) -> typing.AsyncContextManager[gridfs.GridOut]:
+        grid_out = fs._bucket.open_download_stream(
+            file_id=self.id,
+            session=fs._session.driver_session
+        )
+        try:
+            yield grid_out
+        finally:
+            await grid_out.close()
+
+    async def delete(self, fs: FsBucket):
+        await fs._bucket.delete(file_id=self.id, session=fs._session.driver_session)

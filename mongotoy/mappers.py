@@ -388,7 +388,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         self,
         document_cls: typing.Type['documents.BaseDocument'] | str,
         ref_field: str,
-        key_name: str,
+        key_name: str = None,
         nullable: bool = False,
         default: typing.Any = expressions.EmptyValue,
         default_factory: typing.Callable[[], typing.Any] = None,
@@ -752,6 +752,11 @@ class TimeMapper(Mapper, bind=datetime.time):
 
 class CustomTypeMapper(Mapper, abc.ABC):
 
+    def validate(self, value) -> typing.Any:
+        if not isinstance(value, self.__bind__):
+            raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
+        return value
+
     def dump_dict(self, value, **options) -> typing.Any:
         return value.dump_dict(value, **options)
 
@@ -762,10 +767,12 @@ class CustomTypeMapper(Mapper, abc.ABC):
         return value.dump_bson(value, **options)
 
 
-class ConstrainedStrMapper(StrMapper, CustomTypeMapper):
+class ConstrainedStrMapper(CustomTypeMapper):
 
     def validate(self, value) -> typing.Any:
-        return self.__bind__(super().validate(value))
+        if isinstance(value, str):
+            value = self.__bind__(value)
+        return super().validate(value)
 
 
 class IpV4Mapper(ConstrainedStrMapper, bind=types.IpV4):
@@ -839,9 +846,7 @@ class GeometryMapper(CustomTypeMapper):
         if isinstance(value, dict):
             # noinspection PyTypeChecker
             value = geodata.parse_geojson(value, parser=self.__bind__)
-        if not isinstance(value, types.Point):
-            raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
-        return value
+        return super().validate(value)
 
 
 class PointMapper(GeometryMapper, bind=types.Point):
@@ -878,3 +883,53 @@ class MultiPolygonMapper(GeometryMapper, bind=types.MultiPolygon):
     """
     Mapper class for MultiPolygon geometry data.
     """
+
+
+class JsonMapper(CustomTypeMapper, bind=types.Json):
+
+    def validate(self, value) -> typing.Any:
+        if not isinstance(value, dict):
+            raise TypeError(f'Invalid data type {type(value)}, required is {types.Json}')
+
+        # Check Json valid data
+        import json
+        try:
+            json.dumps(value)
+        except Exception as e:
+            raise ValueError(f'Invalid JSON data: {str(e)}') from None
+
+        return types.Json(value)
+
+
+class BsonMapper(CustomTypeMapper, bind=types.Bson):
+
+    def validate(self, value) -> typing.Any:
+        if not isinstance(value, dict):
+            raise TypeError(f'Invalid data type {type(value)}, required is {types.Bson}')
+
+        # Check Json valid data
+        import bson
+        try:
+            bson.encode(value)
+        except Exception as e:
+            raise ValueError(f'Invalid BSON data: {str(e)}') from None
+
+        return types.Bson(value)
+
+
+class FileMapper(ReferencedDocumentMapper, bind=types.File):
+
+    def __init__(
+        self,
+        nullable: bool = False,
+        default: typing.Any = expressions.EmptyValue,
+        default_factory: typing.Callable[[], typing.Any] = None
+    ):
+        from mongotoy import db
+        super().__init__(
+            document_cls=db.FsObject,
+            ref_field='id',
+            nullable=nullable,
+            default=default,
+            default_factory=default_factory
+        )
