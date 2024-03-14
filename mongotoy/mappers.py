@@ -588,9 +588,9 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
             TypeError: If validation fails due to incorrect data type.
 
         """
-        if not isinstance(value, bson.ObjectId):
+        if not bson.ObjectId.is_valid(value):
             raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
-        return value
+        return bson.ObjectId(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         return str(value)
