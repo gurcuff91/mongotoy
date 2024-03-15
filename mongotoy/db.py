@@ -674,12 +674,26 @@ class Objects(typing.Generic[T]):
     def __init__(self, document_cls: typing.Type[T], session: Session, dereference_deep: int = 0):
         self._document_cls = document_cls
         self._session = session
+        self._dereference_deep = dereference_deep
+        self._collection = session.engine.collection(document_cls)
         self._filter = expressions.Query()
         self._sort = expressions.Sort()
         self._skip = 0
         self._limit = 0
-        self._dereference_deep = dereference_deep
-        self._collection = session.engine.collection(document_cls)
+
+    def __copy_with__(self, **options) -> 'Objects[T]':
+        objs = Objects(
+            document_cls=self._document_cls,
+            session=self._session,
+            dereference_deep=self._dereference_deep
+        )
+        setattr(objs, '_collection', self._collection)
+        setattr(objs, '_filter', options.get('_filter', self._filter))
+        setattr(objs, '_sort', options.get('_sort', self._sort))
+        setattr(objs, '_skip', options.get('_skip', self._skip))
+        setattr(objs, '_limit', options.get('_limit', self._limit))
+
+        return objs
 
     async def create(self, **data) -> T:
         doc = self._document_cls(**data)
@@ -696,11 +710,12 @@ class Objects(typing.Generic[T]):
         Returns:
             QuerySet: The updated query set.
         """
+        _filter = self._filter
         for q in queries:
-            self._filter = self._filter & q
+            _filter = _filter & q
         if filters:
-            self._filter = self._filter & expressions.Q(**filters)
-        return self
+            _filter = _filter & expressions.Q(**filters)
+        return self.__copy_with__(_filter=_filter)
 
     def sort(self, *sorts: expressions.Sort) -> 'Objects[T]':
         """
@@ -712,9 +727,10 @@ class Objects(typing.Generic[T]):
         Returns:
             QuerySet: The updated query set.
         """
+        _sort = self._sort
         for sort in sorts:
-            self._sort = self._sort | expressions.Sort(sort)
-        return self
+            _sort = _sort | expressions.Sort(sort)
+        return self.__copy_with__(_sort=_sort)
 
     def skip(self, skip: int) -> 'Objects[T]':
         """
@@ -726,8 +742,7 @@ class Objects(typing.Generic[T]):
         Returns:
             QuerySet: The updated query set.
         """
-        self._skip = skip
-        return self
+        return self.__copy_with__(_skip=skip)
 
     def limit(self, limit: int) -> 'Objects[T]':
         """
@@ -739,8 +754,7 @@ class Objects(typing.Generic[T]):
         Returns:
             QuerySet: The updated query set.
         """
-        self._limit = limit
-        return self
+        return self.__copy_with__(_limit=limit)
 
     async def __aiter__(self) -> typing.AsyncGenerator[T, None]:
         """
