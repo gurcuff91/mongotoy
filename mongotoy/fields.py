@@ -54,7 +54,7 @@ def field(
     }
 
 
-def reference(ref_field: str, key_name: str = None) -> dict:
+def reference(ref_field: str = 'id', key_name: str = None) -> dict:
     """
     Create a reference field descriptor for a document.
 
@@ -133,34 +133,29 @@ class Field:
 
         # Simple type annotation
         if not typing.get_args(mapper_bind):
+            # Extract mapper_bind from ForwardRef
+            if isinstance(mapper_bind, typing.ForwardRef):
+                mapper_bind = getattr(mapper_bind, '__forward_arg__')
+
             # Set up mapper parameters
             mapper_params = {
                 'nullable': options.get('nullable', False),
                 'default': options.get('default', expressions.EmptyValue),
                 'default_factory': options.get('default_factory', None),
             }
+            is_reference = options.get('type') == 'reference'
+            is_document_cls = isinstance(mapper_bind, type) and issubclass(mapper_bind, documents.Document)
 
-            # Check if it's a document type
-            if isinstance(mapper_bind, (typing.ForwardRef, str)) or issubclass(mapper_bind, documents.BaseDocument):
-
-                # Get from ForwardRef
-                if isinstance(mapper_bind, typing.ForwardRef):
-                    mapper_bind = getattr(mapper_bind, '__forward_arg__')
-
-                # Set up parameters for document mapping
+            # Create embedded or reference document mapper
+            if isinstance(mapper_bind, str) or issubclass(mapper_bind, documents.BaseDocument):
                 mapper_params['document_cls'] = mapper_bind
                 mapper_bind = mappers.EmbeddedDocumentMapper
 
-                # If it's a document reference
-                if options.get('type') == 'reference':
-                    mapper_params['ref_field'] = options.pop('ref_field')
-                    mapper_params['key_name'] = options.pop('key_name')
+                # Create reference document mapper
+                if is_reference or is_document_cls:
+                    mapper_params['ref_field'] = options.get('ref_field', 'id')
+                    mapper_params['key_name'] = options.get('key_name')
                     mapper_bind = mappers.ReferencedDocumentMapper
-
-            # Check if mapper_bind is suitable for reference
-            if options.get('type') == 'reference' and mapper_bind is not mappers.ReferencedDocumentMapper:
-                # noinspection SpellCheckingInspection
-                raise Exception(f'Type {mapper_bind} cannot be used with mongotoy.reference() descriptor')
 
             # Create the mapper
             mapper_cls = cache.mappers.get_type(mapper_bind)
@@ -340,7 +335,7 @@ class Field:
         try:
             value = self.mapper(value)
             # Check id value
-            if self.alias == '_id' and value in (None, expressions.EmptyValue):
+            if self.alias == '_id' and value is expressions.EmptyValue:
                 raise ValidationError([
                     ErrorWrapper(loc=tuple(), error=ValueError('Id field value required'))
                 ])

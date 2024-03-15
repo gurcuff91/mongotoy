@@ -306,7 +306,7 @@ class EmbeddedDocumentMapper(Mapper):
         super().__init__(nullable, default, default_factory)
 
     @property
-    def document_cls(self) -> typing.Type['documents.BaseDocument']:
+    def document_cls(self) -> typing.Type['documents.EmbeddedDocument']:
         """
         Get the class of the embedded document.
 
@@ -314,7 +314,7 @@ class EmbeddedDocumentMapper(Mapper):
             Type['documents.BaseDocument']: The class of the embedded document.
 
         """
-        return references.get_base_document_cls(self._document_cls)
+        return references.get_embedded_document_cls(self._document_cls)
 
     def validate(self, value) -> typing.Any:
         """
@@ -404,6 +404,14 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         self._ref_field = ref_field
         self._key_name = key_name
         super().__init__(document_cls, nullable, default, default_factory)
+
+    def validate(self, value) -> typing.Any:
+        value = super().validate(value)
+        if getattr(value, self.ref_field.name) is expressions.EmptyValue:
+            raise ValueError(
+                f'Referenced field {self.document_cls.__name__}.{self.ref_field.name} value required'
+            )
+        return value
 
     @property
     def document_cls(self) -> typing.Type['documents.Document']:

@@ -265,7 +265,6 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
         Args:
             by_alias (bool): Flag to dump by alias.
             exclude_null (bool): Flag to exclude null fields.
-            **options: Additional options.
 
         Returns:
             dict: The dumped data.

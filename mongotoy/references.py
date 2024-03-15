@@ -5,39 +5,24 @@ if typing.TYPE_CHECKING:
     from mongotoy import documents, fields
 
 
-# noinspection PyProtectedMember
-def get_base_document_cls(document_cls: str) -> typing.Type['documents.BaseDocument']:
-    """
-    Get a document class by name from the registered documents.
-
-    Args:
-        document_cls (str): The name of the document class.
-
-    Returns:
-        typing.Type['documents.BaseDocument']: The document class.
-
-    Raises:
-        TypeError: If the document class is not found or not declared yet.
-
-    """
+def get_embedded_document_cls(doc_type: typing.Type | str) -> typing.Type['documents.EmbeddedDocument']:
     from mongotoy import documents
-    if not cache.documents.exist_type(document_cls):
-        raise TypeError(f'Document `{document_cls}` not found or not declared yet')
-    document_cls = cache.documents.get_type(document_cls)
-
-    if not issubclass(document_cls, documents.BaseDocument):
+    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
+    if not issubclass(doc_cls, documents.EmbeddedDocument):
         # noinspection SpellCheckingInspection
-        raise TypeError(f'Document {document_cls} must be subclass of mongotoy.BaseDocument')
-    return document_cls
+        raise TypeError(f'Type {doc_cls} is not an mongotoy.EmbeddedDocument subclass')
+
+    return doc_cls
 
 
-def get_document_cls(document_cls: str) -> typing.Type['documents.Document']:
+def get_document_cls(doc_type: typing.Type | str) -> typing.Type['documents.Document']:
     from mongotoy import documents
-    document_cls = get_base_document_cls(document_cls)
-    if not issubclass(document_cls, documents.Document):
+    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
+    if not issubclass(doc_cls, documents.Document):
         # noinspection SpellCheckingInspection
-        raise TypeError(f'Document {document_cls} must be subclass of mongotoy.Document')
-    return document_cls
+        raise TypeError(f'Type {doc_cls} is not an mongotoy.Document subclass')
+
+    return doc_cls
 
 
 def get_field(field_name: str, document_cls: typing.Type['documents.BaseDocument']) -> 'fields.Field':
@@ -103,10 +88,7 @@ class Reference:
             TypeError: If the referenced field does not exist.
 
         """
-        ref_field = self.document_cls.__fields__.get(self._ref_field)
-        if not ref_field:
-            raise TypeError(f'Referenced field `{self.document_cls.__name__}.{ref_field}` not exist')
-        return ref_field
+        return get_field(self._ref_field, self.document_cls)
 
     @property
     def key_name(self) -> str:
@@ -155,22 +137,6 @@ def build_dereference_pipeline(references: list[Reference], deep: int = 0) -> li
         # noinspection PyProtectedMember,PyTypeChecker
         pipeline.append(
             {
-                # **(
-                #     {
-                #         # Fix for array field not present
-                #         "$addFields": {
-                #             reference.key_name: {
-                #                 "$cond": {
-                #                     "if": {
-                #                         "$ne": [{"$type": f"${reference.key_name}"}, "array"]
-                #                     },
-                #                     "then": [],
-                #                     "else": f"${reference.key_name}"
-                #                 }
-                #             }
-                #         }
-                #     } if reference.is_many else {}
-                # ),
                 "$lookup": {
                     'from': reference.document_cls.__collection_name__,
                     'let': {"fk": f"${reference.key_name}"},

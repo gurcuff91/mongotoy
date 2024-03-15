@@ -52,17 +52,21 @@ class TypesCache:
         """
         return self._prepare_key(type_) in self._cache
 
-    def get_type(self, type_: typing.Type | str) -> typing.Type | None:
+    def get_type(self, type_: typing.Type | str, do_raise: bool = False) -> typing.Type | None:
         """
         Retrieve a type from the cache.
 
         Args:
             type_ (typing.Type | str): The type or string key.
+            do_raise (bool): Raise TypeError is type does not exist
 
         Returns:
             typing.Type | None: The retrieved type if found, None otherwise.
         """
-        return self._cache.get(self._prepare_key(type_))
+        res = self._cache.get(self._prepare_key(type_))
+        if not res and do_raise:
+            raise TypeError(f'Type `{type_}` not found or not declared yet')
+        return res
 
     def get_all_types(self) -> list[typing.Type]:
         # noinspection PyTypeChecker
