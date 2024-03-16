@@ -38,6 +38,8 @@ class TypesCache:
             value (typing.Type): The value to be stored.
 
         """
+        if self.exist_type(type_):
+            raise TypeError(f'Type `{type_}` already declared')
         self._cache[self._prepare_key(type_)] = value
 
     def exist_type(self, type_: typing.Type | str) -> bool:
@@ -65,7 +67,7 @@ class TypesCache:
         """
         res = self._cache.get(self._prepare_key(type_))
         if not res and do_raise:
-            raise TypeError(f'Type `{type_}` not found or not declared yet')
+            raise TypeError(f'Type `{type_}` not declared yet')
         return res
 
     def get_all_types(self) -> list[typing.Type]:

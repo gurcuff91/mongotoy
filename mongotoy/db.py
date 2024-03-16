@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import functools
+import inspect
 import mimetypes
 import typing
 
@@ -229,17 +230,17 @@ class Engine:
     async def _create_document_indexes(
         self,
         document_cls: typing.Type[T],
-        session: AgnosticClientSession = None
+        driver_session: AgnosticClientSession = None
     ):
         indexes = self._get_document_indexes(document_cls)
         collection = self._get_document_collection(document_cls)
         if indexes:
-            await collection.create_indexes(indexes, session=session)
+            await collection.create_indexes(indexes, session=driver_session)
 
     async def _create_document_collection(
         self,
         document_cls: typing.Type[T],
-        session: AgnosticClientSession = None
+        driver_session: AgnosticClientSession = None
     ):
         config = document_cls.document_config
         options = {'check_exists': False}
@@ -271,38 +272,60 @@ class Engine:
             read_preference=config.read_preference or self._read_preference,
             read_concern=config.read_concern or self._read_concern,
             write_concern=config.write_concern or self._write_concern,
-            session=session,
+            session=driver_session,
             **options
         )
 
-    async def migrate(
+    async def _exec_migration(
         self,
         document_cls: typing.Type[T],
-        check_exist: bool = True,
-        with_lock: bool = True,
-        session: 'Session' = None
+        skip_exist: bool = True,
+        driver_session: AgnosticClientSession = None
     ):
-        # Lock
-        if with_lock:
-            await self._migration_lock.acquire()
-
-        driver_session = session.driver_session if session else None
         do_apply = True
 
-        # Check if collection already exist
-        if check_exist:
+        # Skip if collection already exist
+        if skip_exist:
             collections = await self.database.list_collection_names(session=driver_session)
             if document_cls.__collection_name__ in collections:
                 do_apply = False
 
         # Create collection and indexes
         if do_apply:
-            await self._create_document_collection(document_cls, session=driver_session)
-            await self._create_document_indexes(document_cls, session=driver_session)
+            await self._create_document_collection(document_cls, driver_session=driver_session)
+            await self._create_document_indexes(document_cls, driver_session=driver_session)
 
-        # Unlock
-        if with_lock:
-            self._migration_lock.release()
+    # noinspection PyMethodMayBeStatic,PyUnresolvedReferences
+    async def _exec_seeding(
+        self,
+        func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
+        session: 'Session',
+        skip_exist: bool = True
+    ):
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError('Seeding function must be async')
+
+        func_path = f'{func.__module__}.{func.__name__}'
+        do_seeding = True
+
+        # Skip if seeding already applied
+        if skip_exist:
+            if await session.objects(Seeding).filter(
+                Seeding.function == func_path
+            ).count():
+                do_seeding = False
+
+        if do_seeding:
+            await func(session)
+            await session.save(Seeding(function=func_path))
+
+    async def migrate(
+        self,
+        document_cls: typing.Type[T],
+        session: 'Session' = None
+    ):
+        driver_session = session.driver_session if session else None
+        await self._exec_migration(document_cls, driver_session=driver_session)
 
     async def migrate_all(
         self,
@@ -310,13 +333,37 @@ class Engine:
         session: 'Session' = None
     ):
         driver_session = session.driver_session if session else None
-        async with self._migration_lock:
-            collections = await self.database.list_collection_names(session=driver_session)
-            await asyncio.gather(*[
-                self.migrate(i, check_exist=False, with_lock=False)
-                for i in documents_cls
-                if i.__collection_name__ not in collections
-            ])
+        collections = await self.database.list_collection_names(session=driver_session)
+        await asyncio.gather(*[
+            self._exec_migration(
+                doc_cls,
+                skip_exist=False,
+                driver_session=driver_session
+            ) for doc_cls in documents_cls if doc_cls.__collection_name__ not in collections
+        ])
+
+    async def seeding(
+        self,
+        func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
+        session: 'Session' = None
+    ):
+        await self._exec_seeding(func, session=session)
+
+    async def seeding_all(
+        self,
+        funcs: list[typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]],
+        session: 'Session' = None
+    ):
+        seeds = await session.objects(Seeding).fetch()
+        seeds = [s.function for s in seeds]
+        # noinspection PyUnresolvedReferences
+        await asyncio.gather(*[
+            self._exec_seeding(
+                func,
+                session=session,
+                skip_exist=False
+            ) for func in funcs if f'{func.__module__}.{func.__name__}' not in seeds
+        ])
 
 
 class Session(typing.AsyncContextManager):
@@ -700,7 +747,7 @@ class Objects(typing.Generic[T]):
         await self._session.save(doc, save_references=True)
         return doc
 
-    def filter(self, *queries: expressions.Query, **filters) -> 'Objects[T]':
+    def filter(self, *queries: expressions.Query | bool, **filters) -> 'Objects[T]':
         """
         Adds filter conditions to the query set.
 
@@ -934,3 +981,11 @@ class FsObject(documents.Document):
             revision=revision,
             session=fs._session.driver_session
         )
+
+
+class Seeding(documents.Document):
+    function: str = fields.field(id_field=True)
+    applied_at: datetime.datetime = fields.field(default_factory=datetime.datetime.utcnow)
+
+    # noinspection SpellCheckingInspection
+    __collection_name__ = 'mongotoy.seeding'

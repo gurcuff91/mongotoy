@@ -86,6 +86,7 @@ class DocumentMeta(BaseDocumentMeta):
     Metaclass for document class.
     """
 
+    # noinspection PyUnresolvedReferences
     def __new__(mcls, name, bases, namespace, **kwargs):
         """
         Creates a new instance of the document class.
@@ -111,12 +112,6 @@ class DocumentMeta(BaseDocumentMeta):
             # Check id field
             # noinspection PyProtectedMember
             if field._id_field:
-                if _id_field:
-                    # noinspection PyTypeChecker
-                    raise DocumentError(
-                        loc=(name, field.name),
-                        msg=f'Document has many fields id declared'
-                    )
                 _id_field = field
 
             # Unwrap ManyMapper
@@ -144,9 +139,10 @@ class DocumentMeta(BaseDocumentMeta):
                 ),
                 id_field=True
             )
+            _id_field.__set_name__(_cls, 'id')
 
         # Set class props
-        _cls.__fields__ = OrderedDict({'id': _id_field, **_cls.__fields__})
+        _cls.__fields__['id'] = _id_field
         _cls.__references__ = _references
         _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
         _cls.id = _id_field
@@ -335,14 +331,10 @@ class Document(BaseDocument, metaclass=DocumentMeta):
     if TYPE_CHECKING:
         __collection_name__: str
         __references__: dict[str, references.Reference]
-        id: bson.ObjectId
         document_config: DocumentConfig
 
     __collection_name__ = None
     document_config = DocumentConfig()
-
-    def __eq__(self, other):
-        return getattr(self, 'id') == getattr(other, 'id', None)
 
     def dump_bson(
         self,
