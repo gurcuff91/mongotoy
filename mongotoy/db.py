@@ -900,13 +900,15 @@ class FsBucket(Objects['FsObject']):
             session=session
         )
         self._bucket = session.engine.gridfs('fs', chunk_size_bytes)
+        self._chunk_size_bytes = chunk_size_bytes
 
     # noinspection PyMethodMayBeStatic
     async def create(
         self,
         filename: str,
         src: typing.IO | bytes,
-        metadata: dict = None
+        metadata: dict = None,
+        chunk_size_bytes: int = None
     ) -> 'FsObject':
         # Create metadata
         metadata = metadata or {}
@@ -925,6 +927,7 @@ class FsBucket(Objects['FsObject']):
             filename=filename,
             source=src,
             metadata=metadata,
+            chunk_size_bytes=chunk_size_bytes or self._chunk_size_bytes,
             session=self._session.driver_session
         )
         # Update obj info
@@ -952,7 +955,12 @@ class FsObject(documents.Document):
     __collection_name__ = 'fs.files'
 
     async def create_revision(self, fs: FsBucket, src: typing.IO | bytes, metadata: dict = None):
-        await fs.create(self.filename, src=src, metadata=metadata)
+        await fs.create(
+            self.filename,
+            src=src,
+            metadata=metadata,
+            chunk_size_bytes=self.chunk_size
+        )
 
     # noinspection SpellCheckingInspection
     async def download(self, fs: FsBucket, dest: typing.IO, revision: int = None):

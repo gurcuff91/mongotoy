@@ -15,62 +15,7 @@ if typing.TYPE_CHECKING:
     from mongotoy import db
 
 
-# noinspection PyMethodMayBeStatic
-class CustomType:
-
-    def dump_dict(self, value, **options) -> typing.Any:
-        """
-        Dump the value to be in a dictionary.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return value
-
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Dump the value to valid JSON.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return value
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        """
-        Dump the value to valid BSON.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return value
-
-
-class ConstrainedStr(collections.UserString, CustomType):
-
-    def dump_json(self, value, **options) -> typing.Any:
-        return str(value)
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        return str(value)
-
-
-class IpV4(ConstrainedStr):
+class IpV4(collections.UserString):
     """
     Represents an IPv4 address.
 
@@ -89,7 +34,7 @@ class IpV4(ConstrainedStr):
         super().__init__(value)
 
 
-class IpV6(ConstrainedStr):
+class IpV6(collections.UserString):
     """
     Represents an IPv6 address.
 
@@ -116,7 +61,7 @@ class IpV6(ConstrainedStr):
         super().__init__(value)
 
 
-class Port(ConstrainedStr):
+class Port(collections.UserString):
     """
     Represents a port number.
 
@@ -136,7 +81,7 @@ class Port(ConstrainedStr):
         super().__init__(value)
 
 
-class Mac(ConstrainedStr):
+class Mac(collections.UserString):
     """
     Represents a MAC address.
 
@@ -155,7 +100,7 @@ class Mac(ConstrainedStr):
         super().__init__(value)
 
 
-class Phone(ConstrainedStr):
+class Phone(collections.UserString):
     """
     Represents a phone number.
 
@@ -175,7 +120,7 @@ class Phone(ConstrainedStr):
         super().__init__(value)
 
 
-class Email(ConstrainedStr):
+class Email(collections.UserString):
     """
     Represents an email address.
 
@@ -196,7 +141,7 @@ class Email(ConstrainedStr):
         super().__init__(value)
 
 
-class Card(ConstrainedStr):
+class Card(collections.UserString):
     """
     Represents a credit card number.
 
@@ -218,7 +163,7 @@ class Card(ConstrainedStr):
         super().__init__(value)
 
 
-class Ssn(ConstrainedStr):
+class Ssn(collections.UserString):
     """
     Represents a Social Security Number (SSN).
 
@@ -237,7 +182,7 @@ class Ssn(ConstrainedStr):
         super().__init__(value)
 
 
-class Hashtag(ConstrainedStr):
+class Hashtag(collections.UserString):
     """
     Represents a hashtag.
 
@@ -256,7 +201,7 @@ class Hashtag(ConstrainedStr):
         super().__init__(value)
 
 
-class Doi(ConstrainedStr):
+class Doi(collections.UserString):
     """
     Represents a Digital Object Identifier (DOI).
 
@@ -276,7 +221,7 @@ class Doi(ConstrainedStr):
         super().__init__(value)
 
 
-class Url(ConstrainedStr):
+class Url(collections.UserString):
     """
     Represents a URL.
 
@@ -297,7 +242,7 @@ class Url(ConstrainedStr):
         super().__init__(value)
 
 
-class Version(ConstrainedStr):
+class Version(collections.UserString):
     """
     Represents a Semantic Version Number.
 
@@ -318,22 +263,22 @@ class Version(ConstrainedStr):
         super().__init__(value)
 
 
-class GeometryType(CustomType):
+# class GeometryType(CustomType):
+#
+#     def dump_dict(self, value, **options) -> typing.Any:
+#         return {
+#             'type': self.__class__.__name__,
+#             'coordinates': self
+#         }
+#
+#     def dump_json(self, value, **options) -> typing.Any:
+#         return self.dump_dict(value, **options)
+#
+#     def dump_bson(self, value, **options) -> typing.Any:
+#         return self.dump_dict(value, **options)
 
-    def dump_dict(self, value, **options) -> typing.Any:
-        return {
-            'type': self.__class__.__name__,
-            'coordinates': self
-        }
 
-    def dump_json(self, value, **options) -> typing.Any:
-        return self.dump_dict(value, **options)
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        return self.dump_dict(value, **options)
-
-
-class Point(geodata.Position, GeometryType):
+class Point(geodata.Position):
     """
     For type "Point", the "coordinates" member is a single position.
 
@@ -346,7 +291,7 @@ class Point(geodata.Position, GeometryType):
         super().__init__(*coordinates)
 
 
-class MultiPoint(list[Point], GeometryType):
+class MultiPoint(list[Point]):
     """
     For type "MultiPoint", the "coordinates" member is an array of
     positions.
@@ -358,7 +303,7 @@ class MultiPoint(list[Point], GeometryType):
         super().__init__([Point(*i) for i in points])
 
 
-class LineString(list[Point], GeometryType):
+class LineString(list[Point]):
     """
     For type "LineString", the "coordinates" member is an array of two or
     more positions.
@@ -372,7 +317,7 @@ class LineString(list[Point], GeometryType):
         super().__init__([Point(*i) for i in points])
 
 
-class MultiLineString(list[LineString], GeometryType):
+class MultiLineString(list[LineString]):
     """
     For type "MultiLineString", the "coordinates" member is an array of
     LineString coordinate arrays.
@@ -384,7 +329,7 @@ class MultiLineString(list[LineString], GeometryType):
         super().__init__([LineString(*i) for i in lines])
 
 
-class Polygon(list[LineString], GeometryType):
+class Polygon(list[LineString]):
     """
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
     """
@@ -393,7 +338,7 @@ class Polygon(list[LineString], GeometryType):
         super().__init__([geodata.LinearRing(*i) for i in rings])
 
 
-class MultiPolygon(list[Polygon], GeometryType):
+class MultiPolygon(list[Polygon]):
     """
      For type "MultiPolygon", the "coordinates" member is an array of
      Polygon coordinate arrays.
@@ -405,28 +350,16 @@ class MultiPolygon(list[Polygon], GeometryType):
         super().__init__([Polygon(*i) for i in polygons])
 
 
-class Json(dict, CustomType):
+class Json(dict):
     """
     Represents a valid json data.
     """
 
-    def dump_bson(self, value, **options) -> typing.Any:
-        return bson.SON(value)
 
-
-class Bson(bson.SON, CustomType):
+class Bson(bson.SON):
     """
     Represents a valid bson data.
     """
-
-    def dump_dict(self, value, **options) -> typing.Any:
-        return dict(value)
-
-    def dump_json(self, value, **options) -> typing.Any:
-        # noinspection SpellCheckingInspection
-        raise NotImplementedError(
-            'mongotoy.types.Bson does not implement dump_json, use mongotoy.types.Json instead'
-        )
 
 
 class File(typing.Protocol):
