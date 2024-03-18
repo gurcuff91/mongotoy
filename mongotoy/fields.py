@@ -76,6 +76,18 @@ def reference(ref_field: str = 'id', key_name: str = None) -> dict:
 class Field:
     """
     Class for defining document fields.
+
+    This class represents a field in a document schema. It allows specifying various attributes such as the field
+    mapper, alias, index type, and uniqueness.
+
+    Args:
+        mapper (Mapper): The mapper object for the field.
+        alias (str, optional): Alias for the field. Defaults to None.
+        id_field (bool, optional): Indicates if the field is an ID field. Defaults to False.
+        index (IndexType, optional): Type of index for the field. Defaults to None.
+        sparse (bool, optional): Whether the index should be sparse. Defaults to False.
+        unique (bool, optional): Whether the index should be unique. Defaults to False.
+
     """
 
     def __init__(
@@ -87,18 +99,6 @@ class Field:
         sparse: bool = False,
         unique: bool = False
     ):
-        """
-        Initialize the Field object.
-
-        Args:
-            mapper (Mapper): Mapper object for the field.
-            alias (str, optional): Alias for the field. Defaults to None.
-            id_field (bool, optional): Indicates if the field is an ID field. Defaults to False.
-            index (IndexType, optional): Type of index for the field. Defaults to None.
-            sparse (bool, optional): Whether the index should be sparse. Defaults to False.
-            unique (bool, optional): Whether the index should be unique. Defaults to False.
-
-        """
         # If it's an ID field, enforce specific settings
         if id_field:
             alias = '_id'
@@ -113,7 +113,6 @@ class Field:
         self._sparse = sparse
         self._unique = unique
 
-    # Method for building a mapper based on annotations
     @classmethod
     def _build_mapper(cls, mapper_bind: typing.Type, **options) -> mappers.Mapper:
         """
@@ -350,6 +349,14 @@ class Field:
 class FieldProxy:
     """
     Proxy class for fields.
+
+    This class provides a proxy interface for accessing fields in a document schema. It allows for convenient field
+    access and query construction using dot notation.
+
+    Args:
+        field (Field): The field object to proxy.
+        parent (FieldProxy, optional): The parent proxy if the field is nested within another field. Defaults to None.
+
     """
 
     # noinspection PyShadowingNames

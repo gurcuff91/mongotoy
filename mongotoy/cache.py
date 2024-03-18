@@ -2,7 +2,7 @@ import typing
 from collections import OrderedDict
 
 
-class TypesCache:
+class TypeCache:
     """
     Cache class for storing and retrieving types.
 
@@ -76,5 +76,5 @@ class TypesCache:
 
 
 # Singleton instances
-documents = TypesCache()
-mappers = TypesCache()
+documents = TypeCache()
+mappers = TypeCache()

@@ -151,26 +151,25 @@ class DocumentMeta(BaseDocumentMeta):
         return _cls
 
 
+# noinspection PyUnresolvedReferences
 class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
     """
-    Base class for document.
+    Base class representing a document.
+
+    This class serves as the foundation for defining documents. It provides methods for dumping document data in
+    various formats.
+
+    Attributes:
+        __fields__ (dict[str, fields.Field]): Dictionary mapping field names to Field objects.
+        __data__ (dict[str, Any]): Dictionary storing document data.
+
     """
+
     if TYPE_CHECKING:
-        from mongotoy import fields
         __fields__: dict[str, fields.Field]
         __data__: dict[str, Any]
 
     def __init__(self, **data):
-        """
-        Initializes the base document class.
-
-        Args:
-            **data: Keyword arguments for field values.
-
-        Raises:
-            ValidationError: If validation fails for any field.
-
-        """
         self.__data__ = {}
         errors = []
         for field in self.__fields__.values():
@@ -304,11 +303,38 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
 class EmbeddedDocument(BaseDocument):
     """
     Class representing an embedded document.
+
+    This class serves as a base for defining embedded documents within other documents. It inherits functionality
+    from the BaseDocument class.
+
     """
 
 
 @dataclasses.dataclass
 class DocumentConfig:
+    """
+    Represents configuration options for a document in MongoDB.
+
+    This data class defines various settings such as indexes, capped collection options, timeseries collection options,
+    codec options, read preference, read concern, write concern, and extra options for a MongoDB document.
+
+    Attributes:
+        indexes (list[pymongo.IndexModel]): List of index models for the document.
+        capped (bool): Indicates if the collection is capped (default is False).
+        capped_size (int): The maximum size of the capped collection in bytes (default is 16 MB).
+        capped_max (int): The maximum number of documents allowed in a capped collection (default is None).
+        timeseries_field (str): The field name to use as the time field for timeseries collections (default is None).
+        timeseries_meta_field (str): The field name for metadata in timeseries collections (default is None).
+        timeseries_granularity (Literal['seconds', 'minutes', 'hours']): The granularity of time intervals.
+        timeseries_expire_after_seconds (int): The expiration time for documents in a timeseries collection, in seconds.
+        codec_options (bson.CodecOptions): The BSON codec options (default is None).
+        read_preference (pymongo.ReadPreference): The read preference for the document (default is None).
+        read_concern (ReadConcern): The read concern for the document (default is None).
+        write_concern (pymongo.WriteConcern): The write concern for the document (default is None).
+        extra_options (dict): Extra options for the document configuration (default is an empty dictionary).
+
+    """
+
     indexes: list[pymongo.IndexModel] = dataclasses.field(default_factory=lambda: list())
     capped: bool = dataclasses.field(default=False)
     capped_size: int = dataclasses.field(default=16 * (2 ** 20))  # 16 Mb
@@ -326,8 +352,17 @@ class DocumentConfig:
 
 class Document(BaseDocument, metaclass=DocumentMeta):
     """
-    Class representing a document.
+    Represents a document in MongoDB.
+
+    This class inherits from BaseDocument and implements the DocumentMeta metaclass. It provides functionality
+    for dumping BSON data.
+
+    Attributes:
+        __collection_name__ (str): The name of the collection where documents of this class are stored.
+        document_config (DocumentConfig): Configuration options for the document.
+
     """
+
     if TYPE_CHECKING:
         __collection_name__: str
         __references__: dict[str, references.Reference]
@@ -342,6 +377,18 @@ class Document(BaseDocument, metaclass=DocumentMeta):
         exclude_null: bool = False,
         **options
     ) -> bson.SON:
+        """
+        Dump the document to BSON format.
+
+        Args:
+            by_alias (bool): Whether to use field aliases in the BSON output.
+            exclude_null (bool): Whether to exclude fields with null values from the BSON output.
+            **options: Additional options for BSON dumping.
+
+        Returns:
+            bson.SON: The BSON representation of the document.
+
+        """
         son = super().dump_bson(by_alias, exclude_null, **options)
 
         for field, reference in self.__references__.items():

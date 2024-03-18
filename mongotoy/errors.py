@@ -16,16 +16,6 @@ class ErrorWrapper:
         """
 
     def __init__(self, loc: tuple[str], error: Union[Exception, 'ErrorWrapper']):
-        """
-        Initialize ErrorWrapper object.
-
-        Parameters:
-            loc (tuple[str]): The location where the error occurred.
-            error (Union[Exception, 'ErrorWrapper']): The wrapped error instance.
-
-        Raises:
-            TypeError: If `loc` is not a tuple of strings.
-        """
         self._loc, self._error = self._unwrap_error(loc, error)
 
     def _unwrap_error(self, loc: tuple[str], error: Exception) -> tuple[tuple[str], Exception]:
@@ -100,15 +90,6 @@ class ValidationError(Exception):
         """
 
     def __init__(self, errors: list[ErrorWrapper]):
-        """
-        Initialize ValidationError object.
-
-        Parameters:
-            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
-
-        Raises:
-            TypeError: If `errors` is not a list of ErrorWrapper instances.
-        """
         if not all(isinstance(e, ErrorWrapper) for e in errors):
             raise TypeError("Errors must be a list of ErrorWrapper instances.")
 
@@ -161,13 +142,6 @@ class DocumentValidationError(ValidationError):
         """
 
     def __init__(self, document_cls: typing.Type, errors: list[ErrorWrapper]):
-        """
-        Initialize DocumentValidationError object.
-
-        Parameters:
-            document_cls (typing.Type): The type of document where the validation error occurred.
-            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
-        """
         self._document_cls = document_cls
         super().__init__(errors)
 
@@ -208,23 +182,32 @@ class DocumentError(Exception):
         """
 
     def __init__(self, loc: tuple[str], msg: str):
-        """
-        Initialize DocumentError object.
-
-        Parameters:
-            loc (tuple[str]): The location where the error occurred.
-            msg (str): The error message.
-        """
         super().__init__(f'[{".".join(loc)}]. {msg}')
 
 
 class EngineError(Exception):
-    pass
+    """
+    Error raised for engine-related issues.
+
+    This exception is raised when there are errors related to engine operations, such as database connections
+    or queries.
+
+    """
 
 
 class NoResultsError(Exception):
-    pass
+    """
+    Error raised when no results are found.
+
+    This exception is raised when an operation expects results but none are found.
+
+    """
 
 
 class ManyResultsError(Exception):
-    pass
+    """
+    Error raised when multiple results are found.
+
+    This exception is raised when an operation expects a single result but multiple results are found.
+
+    """

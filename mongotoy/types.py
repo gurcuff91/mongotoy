@@ -1,13 +1,11 @@
 
 import collections
-import contextlib
 import datetime
-import io
 import re
 import typing
 
 import bson
-import gridfs
+from motor.motor_asyncio import AsyncIOMotorGridOut
 
 from mongotoy import geodata
 
@@ -263,21 +261,6 @@ class Version(collections.UserString):
         super().__init__(value)
 
 
-# class GeometryType(CustomType):
-#
-#     def dump_dict(self, value, **options) -> typing.Any:
-#         return {
-#             'type': self.__class__.__name__,
-#             'coordinates': self
-#         }
-#
-#     def dump_json(self, value, **options) -> typing.Any:
-#         return self.dump_dict(value, **options)
-#
-#     def dump_bson(self, value, **options) -> typing.Any:
-#         return self.dump_dict(value, **options)
-
-
 class Point(geodata.Position):
     """
     For type "Point", the "coordinates" member is a single position.
@@ -363,6 +346,10 @@ class Bson(bson.SON):
 
 
 class File(typing.Protocol):
+    # noinspection SpellCheckingInspection
+    """
+    This is a facade for type mogotoy.db.FsObject
+    """
     id: bson.ObjectId
     filename: str
     metadata: Json
@@ -370,19 +357,12 @@ class File(typing.Protocol):
     length: int
     upload_date: datetime.datetime
 
-    async def upload(self, fs: 'db.FsBucket', source):
+    async def create_revision(self, fs: 'db.FsBucket', src: typing.IO | bytes, metadata: dict = None):
         pass
 
-    @contextlib.asynccontextmanager
-    async def open_upload(self, fs: 'db.FsBucket') -> typing.AsyncContextManager[gridfs.GridIn]:
+    # noinspection SpellCheckingInspection
+    async def download(self, fs: 'db.FsBucket', dest: typing.IO, revision: int = None):
         pass
 
-    async def download(self, fs: 'db.FsBucket') -> io.BytesIO:
-        pass
-
-    @contextlib.asynccontextmanager
-    async def open_download(self, fs: 'db.FsBucket') -> typing.AsyncContextManager[gridfs.GridOut]:
-        pass
-
-    async def delete(self, fs: 'db.FsBucket'):
+    async def stream(self, fs: 'db.FsBucket', revision: int = None) -> AsyncIOMotorGridOut:
         pass

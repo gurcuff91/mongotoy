@@ -1,16 +1,13 @@
 import typing
 
-if typing.TYPE_CHECKING:
-    from mongotoy.types import GeometryType
 
-
-def parse_geojson(geojson: dict, parser: typing.Type['GeometryType']) -> 'GeometryType':
+def parse_geojson(geojson: dict, parser: typing.Type) -> typing.Type:
     """
     Parse a GeoJSON dictionary using a given geometry parser.
 
     Args:
         geojson (dict): The GeoJSON dictionary to parse.
-        parser (typing.Type['Geometry']): The geometry parser class.
+        parser (typing.Type): The geometry parser class.
 
     Returns:
         'Geometry': An instance of the parsed geometry.

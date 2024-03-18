@@ -260,6 +260,49 @@ class Query(dict[str, list | dict]):
 
 
 # noinspection PyPep8Naming
+class Join(dict[str, list[str]]):
+    """
+    Class representing a join condition for database queries.
+
+    This class provides methods to construct join conditions commonly used in database queries.
+
+    Args:
+        dict[str, list[str]]: A dictionary representing the join condition.
+
+    """
+
+    @classmethod
+    def Eq(cls, left: str, right: str) -> 'Join':
+        """
+        Constructs a join condition for equality.
+
+        Args:
+            left (str): The left side of the join condition.
+            right (str): The right side of the join condition.
+
+        Returns:
+            Join: An instance of the Join class representing the equality join condition.
+
+        """
+        return cls({'$eq': [left, right]})
+
+    @classmethod
+    def In(cls, left: str, right: str) -> 'Join':
+        """
+        Constructs a join condition for membership.
+
+        Args:
+            left (str): The left side of the join condition.
+            right (str): The right side of the join condition.
+
+        Returns:
+            Join: An instance of the Join class representing the membership join condition.
+
+        """
+        return cls({'$in': [left, right]})
+
+
+# noinspection PyPep8Naming
 def Q(**kwargs) -> Query:
     """
     Constructor function to create Query expression.

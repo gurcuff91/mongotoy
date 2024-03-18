@@ -18,6 +18,7 @@ from mongotoy.errors import EngineError, NoResultsError, ManyResultsError
 
 __all__ = (
     'Engine',
+    'Session',
 )
 
 from mongotoy.expressions import Query
@@ -56,10 +57,9 @@ class Engine:
 
             # Create a session and perform operations
             async with engine.session() as session:
-                # Get or create a collection for a document class
-                collection = await engine.get_collection(MyDocument, session=session)
-                # Perform operations on the collection
-                await collection.insert_one({'key': 'value'})
+                # Insert a document
+                my_doc = MyDocument()
+                await session.save(my_doc)
         """
 
     def __init__(
@@ -70,13 +70,11 @@ class Engine:
         read_concern: ReadConcern = None,
         write_concern: pymongo.WriteConcern = None
     ):
-        # Check for forbidden characters in the database name
         forbid_chars = {"/", "\\", ".", '"', "$"}
         forbidden = forbid_chars.intersection(set(database))
         if len(forbidden) > 0:
             raise EngineError(f"Database name cannot contain: {' '.join(forbidden)}")
 
-        # Initialize instance variables
         self._database = database
         self._codec_options = codec_options
         self._read_preference = read_preference
@@ -145,6 +143,15 @@ class Engine:
         return Transaction(provider=self)
 
     def collection(self, document_cls_or_name: typing.Type[T] | str) -> AgnosticCollection:
+        """
+        Retrieves the MongoDB collection.
+
+        Args:
+            document_cls_or_name (typing.Type[T] | str): The document class or collection name.
+
+        Returns:
+            AgnosticCollection: The MongoDB collection.
+        """
         if not isinstance(document_cls_or_name, str):
             return self._get_document_collection(document_cls_or_name)
 
@@ -162,6 +169,16 @@ class Engine:
             bucket_name: str = 'fs',
             chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
     ) -> AgnosticGridFSBucket:
+        """
+        Retrieves the GridFS bucket.
+
+        Args:
+            bucket_name (str): The name of the GridFS bucket.
+            chunk_size_bytes (int): The chunk size in bytes.
+
+        Returns:
+            AgnosticGridFSBucket: The GridFS bucket.
+        """
         return AsyncIOMotorGridFSBucket(
             database=self.database,
             bucket_name=bucket_name,
@@ -175,6 +192,16 @@ class Engine:
         document_cls: typing.Type[documents.BaseDocument],
         parent: str = None
     ) -> list[pymongo.IndexModel]:
+        """
+        Retrieves document indexes.
+
+        Args:
+            document_cls (typing.Type[documents.BaseDocument]): The document class.
+            parent (str, optional): The parent document.
+
+        Returns:
+            list[pymongo.IndexModel]: List of pymongo IndexModels.
+        """
         from mongotoy import mappers
 
         indexes = []
@@ -218,6 +245,15 @@ class Engine:
         return indexes
 
     def _get_document_collection(self, document_cls: typing.Type[T]) -> AgnosticCollection:
+        """
+        Retrieves the document collection.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+
+        Returns:
+            AgnosticCollection: The MongoDB collection.
+        """
         config = document_cls.document_config
         # noinspection PyTypeChecker
         return self.database[document_cls.__collection_name__].with_options(
@@ -232,6 +268,13 @@ class Engine:
         document_cls: typing.Type[T],
         driver_session: AgnosticClientSession = None
     ):
+        """
+        Creates indexes for a document.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            driver_session (AgnosticClientSession, optional): The database session.
+        """
         indexes = self._get_document_indexes(document_cls)
         collection = self._get_document_collection(document_cls)
         if indexes:
@@ -242,6 +285,13 @@ class Engine:
         document_cls: typing.Type[T],
         driver_session: AgnosticClientSession = None
     ):
+        """
+        Creates a document collection.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            driver_session (AgnosticClientSession, optional): The database session.
+        """
         config = document_cls.document_config
         options = {'check_exists': False}
 
@@ -282,9 +332,17 @@ class Engine:
         skip_exist: bool = True,
         driver_session: AgnosticClientSession = None
     ):
+        """
+        Executes document migration.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            skip_exist (bool, optional): Whether to skip if collection exists.
+            driver_session (AgnosticClientSession, optional): The database session.
+        """
         do_apply = True
 
-        # Skip if collection already exist
+        # Skip if collection already exists
         if skip_exist:
             collections = await self.database.list_collection_names(session=driver_session)
             if document_cls.__collection_name__ in collections:
@@ -302,6 +360,14 @@ class Engine:
         session: 'Session',
         skip_exist: bool = True
     ):
+        """
+        Executes seeding.
+
+        Args:
+            func (typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]): The seeding function.
+            session (Session): The session object.
+            skip_exist (bool, optional): Whether to skip if seeding already exists.
+        """
         if not inspect.iscoroutinefunction(func):
             raise TypeError('Seeding function must be async')
 
@@ -324,6 +390,13 @@ class Engine:
         document_cls: typing.Type[T],
         session: 'Session' = None
     ):
+        """
+        Migrates a document.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            session (Session, optional): The session object.
+        """
         driver_session = session.driver_session if session else None
         await self._exec_migration(document_cls, driver_session=driver_session)
 
@@ -332,6 +405,13 @@ class Engine:
         documents_cls: list[typing.Type[T]],
         session: 'Session' = None
     ):
+        """
+        Migrates multiple documents.
+
+        Args:
+            documents_cls (list[typing.Type[T]]): List of document classes.
+            session (Session, optional): The session object.
+        """
         driver_session = session.driver_session if session else None
         collections = await self.database.list_collection_names(session=driver_session)
         await asyncio.gather(*[
@@ -347,6 +427,13 @@ class Engine:
         func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
         session: 'Session' = None
     ):
+        """
+        Executes seeding for a specific function.
+
+        Args:
+            func (typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]): The seeding function.
+            session (Session, optional): The session object.
+        """
         await self._exec_seeding(func, session=session)
 
     async def seeding_all(
@@ -354,6 +441,13 @@ class Engine:
         funcs: list[typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]],
         session: 'Session' = None
     ):
+        """
+        Executes seeding for multiple functions.
+
+        Args:
+            funcs (list[Callable[['Session'], Coroutine[Any, Any, None]]]): List of seeding functions.
+            session (Session, optional): The session object.
+        """
         seeds = await session.objects(Seeding).fetch()
         seeds = [s.function for s in seeds]
         # noinspection PyUnresolvedReferences
@@ -372,22 +466,6 @@ class Session(typing.AsyncContextManager):
 
         Args:
             engine (Engine): The MongoDB engine associated with the session.
-
-        Example:
-            # Create a Session instance
-            session = Session(engine=my_engine)
-
-            # Start the session
-            await session.start()
-
-            # Perform operations within the session context
-            async with session:
-                # Access the driver session and perform database operations
-                collection = await session.get_collection(MyDocument)
-                await collection.insert_one({'key': 'value'})
-
-            # End the session
-            await session.end()
     """
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -585,37 +663,6 @@ class Transaction(typing.AsyncContextManager):
 
         Args:
             provider (Session or Engine): The provider of the transaction, either a Session or an Engine.
-
-        Attributes:
-            _is_session_provided (bool): Indicates whether the transaction is provided with a Session.
-            _session (Session): The associated MongoDB session for the transaction.
-            _tx_started (bool): Indicates whether the transaction has been started.
-            _tx_context: The context manager for the transaction.
-
-        Example:
-            # Create a Transaction instance using a Session
-            session = Session(engine=my_engine)
-            transaction = Transaction(provider=session)
-
-            # Or create a Transaction instance using an Engine
-            engine = Engine(database='my_database')
-            transaction = Transaction(provider=engine)
-
-            # Start and commit the transaction
-            async with transaction:
-                # Perform atomic operations within the transaction context
-                await session.get_collection(MyDocument)
-                await session.save(my_document_instance)
-
-            # Alternatively, use the commit and abort methods
-            await transaction.start()
-            try:
-                # Perform atomic operations
-                await session.save(my_document_instance)
-                await transaction.commit()
-            except Exception as e:
-                await transaction.abort()
-                raise e
     """
 
     def __init__(self, provider: Session | Engine):
@@ -717,6 +764,16 @@ class Transaction(typing.AsyncContextManager):
 
 
 class Objects(typing.Generic[T]):
+    # noinspection SpellCheckingInspection
+    """
+        Represents a query set for retrieving documents from the database.
+        This class provides methods for filtering, sorting, limiting, and executing queries asynchronously.
+
+        Args:
+            document_cls (typing.Type[T]): The document class associated with the query set.
+            session (Session): The session object used for database operations.
+            dereference_deep (int, optional): The depth of dereferencing for referenced documents.
+        """
 
     def __init__(self, document_cls: typing.Type[T], session: Session, dereference_deep: int = 0):
         self._document_cls = document_cls
@@ -729,6 +786,15 @@ class Objects(typing.Generic[T]):
         self._limit = 0
 
     def __copy_with__(self, **options) -> 'Objects[T]':
+        """
+        Creates a shallow copy of the query set with specified options.
+
+        Args:
+            **options: Additional options to be applied to the copy.
+
+        Returns:
+            Objects[T]: A shallow copy of the query set with specified options.
+        """
         objs = Objects(
             document_cls=self._document_cls,
             session=self._session,
@@ -743,6 +809,15 @@ class Objects(typing.Generic[T]):
         return objs
 
     async def create(self, **data) -> T:
+        """
+        Creates a new document in the database.
+
+        Args:
+            **data: Keyword arguments representing the document data.
+
+        Returns:
+            T: The newly created document instance.
+        """
         doc = self._document_cls(**data)
         await self._session.save(doc, save_references=True)
         return doc
@@ -752,10 +827,11 @@ class Objects(typing.Generic[T]):
         Adds filter conditions to the query set.
 
         Args:
-            *filters: Variable number of filters.
+            *queries (expressions.Query | bool): Variable number of filter expressions.
+            **filters: Keyword arguments representing additional filter conditions.
 
         Returns:
-            QuerySet: The updated query set.
+            Objects[T]: The updated query set with added filter conditions.
         """
         _filter = self._filter
         for q in queries:
@@ -769,10 +845,10 @@ class Objects(typing.Generic[T]):
         Adds sort conditions to the query set.
 
         Args:
-            *sorts (dict): Variable number of sort dictionaries.
+            *sorts (expressions.Sort): Variable number of sort expressions.
 
         Returns:
-            QuerySet: The updated query set.
+            Objects[T]: The updated query set with added sort conditions.
         """
         _sort = self._sort
         for sort in sorts:
@@ -787,7 +863,7 @@ class Objects(typing.Generic[T]):
             skip (int): The number of documents to skip.
 
         Returns:
-            QuerySet: The updated query set.
+            Objects[T]: The updated query set with the skip value set.
         """
         return self.__copy_with__(_skip=skip)
 
@@ -799,7 +875,7 @@ class Objects(typing.Generic[T]):
             limit (int): The maximum number of documents to return.
 
         Returns:
-            QuerySet: The updated query set.
+            Objects[T]: The updated query set with the limit value set.
         """
         return self.__copy_with__(_limit=limit)
 
@@ -869,6 +945,16 @@ class Objects(typing.Generic[T]):
 
     # noinspection PyShadowingBuiltins
     async def fetch_by_id(self, value: typing.Any, dereference_deep: int = 0) -> T:
+        """
+        Retrieves a document by its identifier.
+
+        Args:
+            value (typing.Any): The identifier value.
+            dereference_deep (int): The depth of dereference documents.
+
+        Returns:
+            T: The parsed document instance.
+        """
         id_mapper = self._document_cls.__fields__['id'].mapper
         return await self.filter(
             Query.Eq('_id', id_mapper.validate(value))
@@ -889,6 +975,16 @@ class Objects(typing.Generic[T]):
 
 # noinspection PyProtectedMember
 class FsBucket(Objects['FsObject']):
+    # noinspection SpellCheckingInspection
+    """
+        Represents a file system bucket for storing and managing file objects.
+        This class inherits from Objects and provides methods for file upload,
+        existence check, and accessing file revisions.
+
+        Args:
+            session (Session): The session object used for database operations.
+            chunk_size_bytes (int): The size of chunks in bytes for file storage (default gridfs.DEFAULT_CHUNK_SIZE).
+        """
 
     def __init__(
         self,
@@ -910,6 +1006,18 @@ class FsBucket(Objects['FsObject']):
         metadata: dict = None,
         chunk_size_bytes: int = None
     ) -> 'FsObject':
+        """
+        Uploads a file to the file system bucket.
+
+        Args:
+            filename (str): The name of the file.
+            src (typing.IO | bytes): The source file object or bytes to be uploaded.
+            metadata (dict, optional): Additional metadata for the file.
+            chunk_size_bytes (int, optional): The size of chunks in bytes for file storage.
+
+        Returns:
+            FsObject: The uploaded file object.
+        """
         # Create metadata
         metadata = metadata or {}
         content_type = mimetypes.guess_type(filename, strict=False)[0]
@@ -936,25 +1044,64 @@ class FsBucket(Objects['FsObject']):
         return obj
 
     async def exist(self, filename: str) -> bool:
+        """
+        Checks if a file exists in the file system bucket.
+
+        Args:
+            filename (str): The name of the file.
+
+        Returns:
+            bool: True if the file exists, False otherwise.
+        """
         count = await self.filter(Query.Eq('filename', filename)).count()
         return count > 0
 
     async def revisions(self, filename: str) -> list['FsObject']:
+        """
+        Retrieves all revisions of a file from the file system bucket.
+
+        Args:
+            filename (str): The name of the file.
+
+        Returns:
+            list[FsObject]: A list of file objects representing revisions.
+        """
         return await self.filter(Query.Eq('filename', filename)).fetch()
 
 
 # noinspection PyProtectedMember
 class FsObject(documents.Document):
+    """
+    Represents a file object stored in the file system.
+    This class inherits from Document and provides methods for creating revisions, downloading, and streaming files.
+
+    Attributes:
+        filename (str): The name of the file.
+        metadata (types.Json): Metadata associated with the file.
+        chunk_size (int): The size of chunks in bytes for file storage.
+        length (int): The length of the file.
+        upload_date (datetime.datetime): The date and time when the file was uploaded.
+
+    """
+
     filename: str
     metadata: types.Json
     chunk_size: int = fields.field(alias='chunkSize')
     length: int
     upload_date: datetime.datetime = fields.field(alias='uploadDate')
 
-    # noinspection SpellCheckingInspection
     __collection_name__ = 'fs.files'
 
     async def create_revision(self, fs: FsBucket, src: typing.IO | bytes, metadata: dict = None):
+        """
+        Creates a revision of the file.
+
+        Args:
+            fs (FsBucket): The file system bucket where the revision will be created.
+            src (typing.IO | bytes): The source file object or bytes for the new revision.
+            metadata (dict, optional): Additional metadata for the new revision.
+
+        """
         await fs.create(
             self.filename,
             src=src,
@@ -964,6 +1111,15 @@ class FsObject(documents.Document):
 
     # noinspection SpellCheckingInspection
     async def download(self, fs: FsBucket, dest: typing.IO, revision: int = None):
+        """
+        Downloads the file from the file system.
+
+        Args:
+            fs (FsBucket): The file system bucket from where the file will be downloaded.
+            dest (typing.IO): The destination file object to write the downloaded file contents.
+            revision (int): The revision number of the file to download. If None, downloads the latest revision.
+
+        """
         if revision is None:
             await fs._bucket.download_to_stream(
                 file_id=self.id,
@@ -979,6 +1135,17 @@ class FsObject(documents.Document):
             )
 
     async def stream(self, fs: FsBucket, revision: int = None) -> AsyncIOMotorGridOut:
+        """
+        Streams the file from the file system.
+
+        Args:
+            fs (FsBucket): The file system bucket from where the file will be streamed.
+            revision (int, optional): The revision number of the file to stream. If None, streams the latest revision.
+
+        Returns:
+            AsyncIOMotorGridOut: An asynchronous grid file stream.
+
+        """
         if revision is None:
             return await fs._bucket.open_download_stream(
                 file_id=self.id,
@@ -991,9 +1158,19 @@ class FsObject(documents.Document):
         )
 
 
+# noinspection SpellCheckingInspection
 class Seeding(documents.Document):
+    """
+    Represents a seeding operation in the database.
+    This class inherits from Document and tracks seeding functions applied to the database.
+
+    Attributes:
+        function (str): The name or identifier of the seeding function.
+        applied_at (datetime.datetime): The timestamp when the seeding was applied.
+
+    """
+
     function: str = fields.field(id_field=True)
     applied_at: datetime.datetime = fields.field(default_factory=datetime.datetime.utcnow)
 
-    # noinspection SpellCheckingInspection
     __collection_name__ = 'mongotoy.seeding'
