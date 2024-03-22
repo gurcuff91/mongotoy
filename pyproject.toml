@@ -1,9 +1,18 @@
 [tool.poetry]
 name = "mongotoy"
 version = "0.1.0"
-description = ""
+description = "Async ODM for MongoDB"
+license = "Apache-2.0"
 authors = ["gurcuff91 <gf.meneses91@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/gurcuff91/mongotoy"
+keywords = ["mapping", "asyncio", "odm", "mongodb"]
+classifiers = [
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
