@@ -1,0 +1,6 @@
+site_name: Mongotoy
+site_description: Async ODM for MongoDB.
+site_url: https://github.com/gurcuff91/mongotoy
+site_author: Gustavo F. Meneses Perez
+theme: readthedocs
+
