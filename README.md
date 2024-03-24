@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/igorbenav/fastcrud">
-    <img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy image." width="45%" height="auto">
+    <img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy Logo" width="45%" height="auto">
   </a>
 </p>
 
@@ -21,7 +21,7 @@
 <p align="justify">
   <b>Mongotoy</b> is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for building high-performance applications. This integration allows for efficient communication with MongoDB databases, ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, data-driven applications
 </p>
-<hr>
+<hr>[
 
 ## Features
 
@@ -152,8 +152,10 @@ poetry add mongotoy
 
 
 ## Extras
-See full documentation at:  rr
+See full documentation at:
 
-**If you like this project buy me a coffe !!**
+<a href="https://gurcuff91.github.io/mongotoy/"><img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy Logo" height="42" width="175"></a>
 
-<a href="https://www.buymeacoffee.com/gurcuff91" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="42" width="175"></a>
+### If you like this project buy me a coffe !!
+
+<a href="https://www.buymeacoffee.com/gurcuff91"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="42" width="175"></a>
