@@ -2,7 +2,6 @@
     .md-typeset h1{
         display: none;
     }
-    .md
 </style>
 
 <p align="center">
@@ -144,6 +143,19 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
+## Installing
+
+ To install, just run:
+ ```sh
+ pip install mongotoy
+ ```
+
+Or, if using poetry:
+
+```sh
+poetry add mongotoy
+```
+
 
 /// note | Some title
 Some content
@@ -157,4 +169,4 @@ Some content
 Some content
 ///
 
-:smile: 
+:smile:
