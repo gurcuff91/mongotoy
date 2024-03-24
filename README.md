@@ -1,13 +1,6 @@
-<style>
-    .md-typeset h1{
-        display: none;
-    }
-    .md
-</style>
-
 <p align="center">
   <a href="https://github.com/igorbenav/fastcrud">
-    <img src="assets/mongotoy.png?raw=true" alt="Mongotoy image." width="45%" height="auto">
+    <img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy image." width="45%" height="auto">
   </a>
 </p>
 
@@ -144,9 +137,22 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
+## Installing
+
+ To install, just run:
+ ```sh
+ pip install mongotoy
+ ```
+
+Or, if using poetry:
+
+```sh
+poetry add mongotoy
+```
+
 
 ## Extras
-See full documentation at: 
+See full documentation at:  rr
 
 **If you like this project buy me a coffe !!**
 
