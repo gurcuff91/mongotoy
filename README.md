@@ -21,7 +21,7 @@
 <p align="justify">
   <b>Mongotoy</b> is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for building high-performance applications. This integration allows for efficient communication with MongoDB databases, ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, data-driven applications
 </p>
-<hr>[
+<hr>
 
 ## Features
 
