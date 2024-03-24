@@ -16,6 +16,8 @@
       
       
       
+        <link rel="next" href="documents/">
+      
       
       <link rel="icon" href="assets/logo.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
@@ -230,6 +232,57 @@
   
 
       
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="documents/" class="md-tabs__link">
+        
+  
+    
+  
+  Documents
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="fields/" class="md-tabs__link">
+        
+  
+    
+  
+  Fields
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="references/" class="md-tabs__link">
+        
+  
+    
+  
+  References
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -350,9 +403,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extras" class="md-nav__link">
+  <a href="#license" class="md-nav__link">
     <span class="md-ellipsis">
-      Extras
+      License
     </span>
   </a>
   
@@ -362,6 +415,66 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="documents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="fields/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fields
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -418,9 +531,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extras" class="md-nav__link">
+  <a href="#license" class="md-nav__link">
     <span class="md-ellipsis">
-      Extras
+      License
     </span>
   </a>
   
@@ -450,6 +563,9 @@
     .md-typeset h1{
         display: none;
     }
+    .md-sidebar--primary {
+        display: none;
+    }
 </style>
 
 <p align="center">
@@ -473,71 +589,96 @@
 
 <hr>
 <p align="justify">
-  <b>Mongotoy</b> is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for building high-performance applications. This integration allows for efficient communication with MongoDB databases, ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, data-driven applications
+  <b>Mongotoy</b> is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions 
+  with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy 
+  seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for 
+  building high-performance applications. This integration allows for efficient communication with MongoDB databases,
+  ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of 
+  MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, 
+  data-driven applications
 </p>
 <hr>
 
 <h2 id="features">Features</h2>
 <ul>
 <li>
-<p><strong>Asynchronous Power</strong>: Mongotoy leverages the asynchronous paradigm of Python, enabling efficient management of I/O operations for optimal performance and responsiveness in applications.</p>
+<p><strong>Asynchronous Power</strong>: Mongotoy leverages the asynchronous paradigm of Python, enabling efficient management of
+I/O operations for optimal performance and responsiveness in applications.</p>
 </li>
 <li>
-<p><strong>Based on Motor Driver</strong>: Mongotoy is built on top of the asynchronous Motor MongoDB driver, ensuring seamless integration with asynchronous Python applications. </p>
+<p><strong>Based on Motor Driver</strong>: Mongotoy is built on top of the asynchronous Motor MongoDB driver, ensuring seamless 
+integration with asynchronous Python applications. </p>
 </li>
 <li>
-<p><strong>Schemaless Flexibility</strong>: With a schemaless design, Mongotoy empowers developers to work with MongoDB databases without rigid schemas, adapting to evolving data models effortlessly.</p>
+<p><strong>Schemaless Flexibility</strong>: With a schemaless design, Mongotoy empowers developers to work with MongoDB databases
+without rigid schemas, adapting to evolving data models effortlessly.</p>
 </li>
 <li>
 <p><strong>Intuitive API</strong>: Mongotoy features an elegant and straightforward API facilitating common database operations.</p>
 </li>
 <li>
-<p><strong>Flexible Configuration Options</strong>: Mongotoy offers extensive configuration options at both the database and document levels, enabling fine-tuning of MongoDB interactions for optimal performance and reliability.</p>
+<p><strong>Flexible Configuration Options</strong>: Mongotoy offers extensive configuration options at both the database and 
+document levels, enabling fine-tuning of MongoDB interactions for optimal performance and reliability.</p>
 </li>
 <li>
-<p><strong>Custom Data Types Support</strong>: Mongotoy simplifies handling of custom data types and allows defining new types through Data Mapper classes, enhancing data integrity and consistency.</p>
+<p><strong>Custom Data Types Support</strong>: Mongotoy simplifies handling of custom data types and allows defining new types
+through Data Mapper classes, enhancing data integrity and consistency.</p>
 </li>
 <li>
-<p><strong>Object-Document Mapping</strong>: Simplifying MongoDB document manipulation, Mongotoy maps Python objects to MongoDB documents seamlessly, enabling intuitive and object-oriented interactions.</p>
+<p><strong>Object-Document Mapping</strong>: Simplifying MongoDB document manipulation, Mongotoy maps Python objects to MongoDB 
+documents seamlessly, enabling intuitive and object-oriented interactions.</p>
 </li>
 <li>
-<p><strong>Document Serialization</strong>: Mongotoy supports serialization of documents into JSON, BSON, or Python dictionaries, enabling seamless integration with different parts of an application stack.</p>
+<p><strong>Document Serialization</strong>: Mongotoy supports serialization of documents into JSON, BSON, or Python dictionaries, 
+enabling seamless integration with different parts of an application stack.</p>
 </li>
 <li>
-<p><strong>Document Inheritance Support</strong>: Mongotoy provides robust support for document inheritance, enabling the creation of hierarchical data models and promoting code reuse and maintainability.</p>
+<p><strong>Document Inheritance Support</strong>: Mongotoy provides robust support for document inheritance, enabling the creation
+of hierarchical data models and promoting code reuse and maintainability.</p>
 </li>
 <li>
-<p><strong>Python Type Hint Support</strong>: Mongotoy allows developers to define document fields using Python type hints, enhancing code readability and enabling type checking.</p>
+<p><strong>Python Type Hint Support</strong>: Mongotoy allows developers to define document fields using Python type hints, 
+enhancing code readability and enabling type checking.</p>
 </li>
 <li>
-<p><strong>Relationship Management</strong>: Simplifying relationship management between documents, Mongotoy offers robust support for references and embedded documents, automating insertions, deletions, and updates.</p>
+<p><strong>Relationship Management</strong>: Simplifying relationship management between documents, Mongotoy offers robust support
+for references and embedded documents, automating insertions, deletions, and updates.</p>
 </li>
 <li>
-<p><strong>Automatic Operation Handling</strong>: Mongotoy automates insertion and deletion management, ensuring data integrity and consistency across related documents.</p>
+<p><strong>Automatic Operation Handling</strong>: Mongotoy automates insertion and deletion management, ensuring data integrity 
+and consistency across related documents.</p>
 </li>
 <li>
-<p><strong>Query Building</strong>: Mongotoy provides a powerful query building interface for constructing complex queries using Pythonic syntax.</p>
+<p><strong>Query Building</strong>: Mongotoy provides a powerful query building interface for constructing complex queries using 
+Pythonic syntax.</p>
 </li>
 <li>
-<p><strong>Index Management</strong>: Mongotoy simplifies the management of database indexes, optimizing query performance for efficient data retrieval.</p>
+<p><strong>Index Management</strong>: Mongotoy simplifies the management of database indexes, optimizing query performance for 
+efficient data retrieval.</p>
 </li>
 <li>
-<p><strong>Transactions</strong>: Supporting MongoDB transactions, Mongotoy ensures data consistency and atomicity across multiple operations within a single transactional context.</p>
+<p><strong>Transactions</strong>: Supporting MongoDB transactions, Mongotoy ensures data consistency and atomicity across multiple
+operations within a single transactional context.</p>
 </li>
 <li>
-<p><strong>Geospatial Data Support</strong>: Mongotoy offers robust support for geospatial data types, facilitating storage, querying, and spatial analysis.</p>
+<p><strong>Geospatial Data Support</strong>: Mongotoy offers robust support for geospatial data types, facilitating storage, 
+querying, and spatial analysis.</p>
 </li>
 <li>
-<p><strong>Database Seeding Management</strong>: With built-in support for database seeding, Mongotoy streamlines the initialization of databases with predefined data sets, enhancing developer productivity.</p>
+<p><strong>Database Seeding Management</strong>: With built-in support for database seeding, Mongotoy streamlines the 
+initialization of databases with predefined data sets, enhancing developer productivity.</p>
 </li>
 <li>
-<p><strong>Support for Capped Collections</strong>: Mongotoy natively supports capped collections in MongoDB, ideal for scenarios requiring fixed-size, ordered datasets.</p>
+<p><strong>Support for Capped Collections</strong>: Mongotoy natively supports capped collections in MongoDB, ideal for 
+scenarios requiring fixed-size, ordered datasets.</p>
 </li>
 <li>
-<p><strong>Time Series Collections Management</strong>: Mongotoy provides robust support for managing time series data in MongoDB, optimized for storing and querying time-stamped data points.</p>
+<p><strong>Time Series Collections Management</strong>: Mongotoy provides robust support for managing time series data in 
+MongoDB, optimized for storing and querying time-stamped data points.</p>
 </li>
 <li>
-<p><strong>GridFS File Handling</strong>: Mongotoy seamlessly integrates with MongoDB's GridFS storage system for efficient handling of large files, offering a high-level interface for file management within MongoDB.</p>
+<p><strong>GridFS File Handling</strong>: Mongotoy seamlessly integrates with MongoDB's GridFS storage system for efficient
+handling of large files, offering a high-level interface for file management within MongoDB.</p>
 </li>
 </ul>
 <h2 id="minimal-example">Minimal Example</h2>
@@ -641,6 +782,8 @@
 <p>Or, if using poetry:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>poetry<span class="w"> </span>add<span class="w"> </span>mongotoy
 </code></pre></div></td></tr></table></div>
+<h2 id="license">License</h2>
+<p>This project is licensed under the terms of the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache 2.0 license</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Some title</p>
 <p>Some content</p>
@@ -654,9 +797,6 @@
 <p>Some content</p>
 </div>
 <p><img alt="😄" class="emojione" src="https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7/assets/png/1f604.png" title=":smile:" /></p>
-<h2 id="extras">Extras</h2>
-<p>See full documentation at:</p>
-<p><a href="https://gurcuff91.github.io/mongotoy/"><img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy Logo" height="42" width="175"></a></p>
 
 
 
