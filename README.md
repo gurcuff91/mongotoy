@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/igorbenav/fastcrud">
+  <a href="https://github.com/gurcuff91/mongotoy">
     <img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy Logo" width="45%" height="auto">
   </a>
 </p>
@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/fastcrud/">
-    <img src="https://img.shields.io/pypi/v/mongotoy?color=%2334D058&label=pypi%20package" alt="PyPi Version"/>
+  <a href="https://pypi.org/project/mongotoy/">
+    <img src="https://img.shields.io/pypi/v/mongotoy?color=%2334D058&label=version" alt="Version"/>
   </a>
-  <a href="https://pypi.org/project/fastcrud/">
+  <a href="https://pypi.org/project/mongotoy/">
     <img src="https://img.shields.io/pypi/pyversions/mongotoy.svg?color=%2334D058" alt="Supported Python Versions"/>
   </a>
 </p>
@@ -152,10 +152,8 @@ poetry add mongotoy
 
 
 ## Extras
-See full documentation at:
+See full documentation at: https://gurcuff91.github.io/mongotoy
 
-<a href="https://gurcuff91.github.io/mongotoy/"><img src="https://github.com/gurcuff91/mongotoy/blob/master/docs/assets/mongotoy.png" alt="Mongotoy Logo" height="42" width="175"></a>
-
-### If you like this project buy me a coffe !!
+### If you like this project !!
 
 <a href="https://www.buymeacoffee.com/gurcuff91"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="42" width="175"></a>
