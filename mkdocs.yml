@@ -49,4 +49,7 @@ markdown_extensions:
 
 nav:
   - Mongotoy: index.md
+  - Documents: documents.md
+  - Fields: fields.md
+  - References: references.md
 
