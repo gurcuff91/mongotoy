@@ -1,9 +1,36 @@
-# Mongotoy: Async ODM for MongoDB
+<style>
+    .md-typeset h1{
+        display: none;
+    }
+    .md
+</style>
 
-Mongotoy is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for building high-performance applications. This integration allows for efficient communication with MongoDB databases, ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, data-driven applications.
+<p align="center">
+  <a href="https://github.com/igorbenav/fastcrud">
+    <img src="assets/mongotoy.png?raw=true" alt="Mongotoy image." width="45%" height="auto">
+  </a>
+</p>
 
+<p align="center">
+  <i>Async ODM for MongoDB.</i>
+</p>
 
-## Key Features
+<p align="center">
+  <a href="https://pypi.org/project/fastcrud/">
+    <img src="https://img.shields.io/pypi/v/mongotoy?color=%2334D058&label=pypi%20package" alt="PyPi Version"/>
+  </a>
+  <a href="https://pypi.org/project/fastcrud/">
+    <img src="https://img.shields.io/pypi/pyversions/mongotoy.svg?color=%2334D058" alt="Supported Python Versions"/>
+  </a>
+</p>
+
+<hr>
+<p align="justify">
+  <b>Mongotoy</b> is a comprehensive asynchronous Object-Document Mapper (ODM) designed to simplify interactions with MongoDB databases in Python applications. Leveraging the Motor asynchronous MongoDB driver, Mongotoy seamlessly integrates asynchronous programming with MongoDB, providing developers with a powerful toolset for building high-performance applications. This integration allows for efficient communication with MongoDB databases, ensuring optimal scalability and responsiveness. With Mongotoy, developers can harness the full potential of MongoDB's features while enjoying the benefits of asynchronous programming, making it an ideal choice for modern, data-driven applications
+</p>
+<hr>
+
+## Features
 
 - **Asynchronous Power**: Mongotoy leverages the asynchronous paradigm of Python, enabling efficient management of I/O operations for optimal performance and responsiveness in applications.
 
@@ -65,97 +92,58 @@ Mongotoy is a comprehensive asynchronous Object-Document Mapper (ODM) designed t
 - **GridFS File Handling**: Mongotoy seamlessly integrates with MongoDB's GridFS storage system for efficient handling of large files, offering a high-level interface for file management within MongoDB.
 
 
-## Get Started
-
-### Installation
-
-Mongotoy can be easily installed via pip.
-
-```bash
-pip install mongotoy
-```
-
-### Define your first Document(s)
-
-To define your first document, you'll create Python classes that represent the structure of your data. Each class corresponds to a collection in MongoDB. For example, let's define two classes: `Address` and `Person`.
-In this example, Address is an embedded document containing address information, while Person is a document representing a person. Each field in these classes corresponds to a field in the MongoDB document. You can also specify additional options for each field, such as uniqueness or indexing.
+## Minimal Example
+Let's begin with a minimal example by defining a document and performing CRUD operations on the database.
 
 ```python
-from mongotoy import Document, EmbeddedDocument, field, types
+import asyncio
+from mongotoy import Document, Engine
 import datetime
-import pymongo
 
-class Address(EmbeddedDocument):
-    street: str = field(index=pymongo.TEXT)
-    city: str
-    zip: int
-    location: types.Point
 
 class Person(Document):
-    name: str = field(unique=True)
+    name: str
     last_name: str
-    address: Address
     dob: datetime.date
-    ssn: types.Ssn
-```
 
-### Interact with DB (CRUD operations)
+    
+# Create database engine
+db = Engine('test-db')
 
-To interact with the database using Mongotoy, you first need to establish a connection to the database and open a
-database session. Then, you can perform CRUDs operations:
-
-```python
-from mongotoy import Engine, types
-import datetime
-import asyncio
-
-# Create the MongoDB database engine
-db = Engine(database='test-db')
 
 async def main():
-    # Connect to the MongoDB database
-    await db.connect('mongodb://localhost:27017')
-    
     # Create a new Person instance
-    customer = Person(
+    person = Person(
         name='John',
         last_name='Doe',
-        dob=datetime.date(1990, 12, 25),
-        ssn='701-76-9732',
-        address=Address(
-            street='12910 US-90',
-            city='Live Oak',
-            zip=81100,
-            location=types.Point(34.56, 78.98),
-        )
+        dob=datetime.date(1990, 12, 25)
     )    
+    
+    # Connect to the MongoDB database
+    await db.connect('mongodb://localhost:27017')
     
     # Open a database session
     async with db.session() as session:
         
-        # Save the customer document to the database
-        await session.save(customer)
+        # Save the person to the database
+        await session.save(person)
         
-        # Fetch all customers from database
+        # Fetch all persons from database
         async for c in session.objects(Person):
             print(c.dump_dict())
             
-        # Update customer dob
-        customer.dob=datetime.date(1995, 10, 25)
-        await session.save(customer)
+        # Update person dob
+        person.dob=datetime.date(1995, 10, 25)
+        await session.save(person)
         
-        # Open a Transaction
-        async with session.transaction():
-            # Delete customer
-            await session.delete(customer)
-        
+        # Delete person from database
+        await session.delete(person)
 
-# Run code 
+
 if __name__ == '__main__':
     asyncio.run(main())
 ```
 
-Mongotoy provides Python developers with a seamless and intuitive solution for MongoDB database management. With Motor asynchronous driver integration, schemaless flexibility, and an intuitive API, Mongotoy simplifies database tasks from CRUD operations to advanced queries and geospatial data handling. Additional features like document inheritance, transaction support, and document serialization enhance its versatility.
 
 ## Extras
 See full documentation at: 

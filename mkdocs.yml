@@ -1,6 +1,52 @@
 site_name: Mongotoy
 site_description: Async ODM for MongoDB.
 site_url: https://github.com/gurcuff91/mongotoy
+repo_name: gurcuff91/mongotoy
+repo_url: https://github.com/gurcuff91/mongotoy
 site_author: Gustavo F. Meneses Perez
-theme: readthedocs
+
+theme:
+  name: material
+  font:
+    text: Ubuntu
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tabs
+    - navigation.indexes
+    - search.suggest
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.blocks.admonition
+  - pymdownx.emoji
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      linenums: true
+
+nav:
+  - Mongotoy: index.md
 
