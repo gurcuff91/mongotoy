@@ -2,22 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/gurcuff91/mongotoy/</loc>
-         <lastmod>2024-03-24</lastmod>
+         <lastmod>2024-03-25</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/gurcuff91/mongotoy/documents/</loc>
-         <lastmod>2024-03-24</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://github.com/gurcuff91/mongotoy/fields/</loc>
-         <lastmod>2024-03-24</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://github.com/gurcuff91/mongotoy/references/</loc>
-         <lastmod>2024-03-24</lastmod>
+         <lastmod>2024-03-25</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
