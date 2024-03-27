@@ -106,3 +106,58 @@ class Address(EmbeddedDocument):
     zipcode: int
     country: str
 ````
+
+/// note
+By default, Mongotoy does **not require** any field values to be specified during document creation, aligning with
+MongoDB's schemaless nature. Unspecified field values are set to `mongotoy.expressions.EmptyValue`, and Mongotoy 
+only validates the values of fields that have been explicitly specified. The exception to this rule is the `id` field,
+which must have at least one default value defined either through the `default` or `default_factory` properties.
+///
+
+
+## Dumping documents
+
+Mongotoy simplifies the process of exporting document data by offering three distinct methods: 
+`dump_dict`, `dump_json`, and `dump_bson`. These three methods offer flexibility, allowing you to choose the
+appropriate format based on needs and integration requirements.
+
+/// note
+The `dump_json` and `dump_bson` methods prepare data for compatibility with JSON and BSON formats respectively. 
+However, they don't perform serialization themselves, to fully serialize the data you'll need to use an 
+appropriate third-party library.
+///
+
+### Dump as dict
+The `dump_dict` method converts document data into a Python dictionary format, facilitating integration with
+Python-based workflows and applications. It supports the following customization parameters to tailor the output 
+according to specific requirements.
+
+- **by_alias**: Dumping by fields aliases. (default is False)
+- **exclude_empty**: Exclude fields with empty values from the output. (default is False)
+- **exclude_null**: Exclude fields with null values from the output. (default is False)
+
+### Dump as json
+The `dump_json` method export the document data in a format compatible with JSON, facilitating
+interoperability with various systems and services supporting JSON data exchange. It supports the following
+customization parameters to tailor the output according to specific requirements.
+
+- **by_alias**: Dumping by fields aliases. (default is False)
+- **exclude_null**: Exclude fields with null values from the output. (default is False)
+
+### Dump as bson
+The `dump_bson` method export the document data in a format compatible with BSON for seamless interaction 
+with MongoDB database. It supports the following customization parameters to tailor the output 
+according to specific requirements.
+
+- **by_alias**: Dumping by fields aliases. (default is True)
+- **exclude_null**: Exclude fields with null values from the output. (default is False)
+
+/// note
+The `dump_json` and `dump_bson` methods exclude empty values from the output, unlike `dump_dict`, which includes 
+them optionally.
+///
+
+Through these versatile dumping methods, Mongotoy empowers you to work with document data in various formats,
+catering to diverse data processing and integration requirements. Whether it's within Python environments, 
+interoperating with JSON-compatible systems, or interacting with MongoDB databases, Mongotoy provides the 
+flexibility and compatibility needed for efficient data management and integration.
