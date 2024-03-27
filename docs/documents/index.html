@@ -521,6 +521,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#dumping-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dumping documents
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dumping documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as dict
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as json
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-bson" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as bson
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -822,6 +864,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#dumping-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dumping documents
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dumping documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as dict
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as json
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dump-as-bson" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dump as bson
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -949,6 +1033,57 @@ class attributes in a manner similar to how you would define a <a href="#documen
     <span class="n">zipcode</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">country</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, Mongotoy does <strong>not require</strong> any field values to be specified during document creation, aligning with
+MongoDB's schemaless nature. Unspecified field values are set to <code>mongotoy.expressions.EmptyValue</code>, and Mongotoy 
+only validates the values of fields that have been explicitly specified. The exception to this rule is the <code>id</code> field,
+which must have at least one default value defined either through the <code>default</code> or <code>default_factory</code> properties.</p>
+</div>
+<h2 id="dumping-documents">Dumping documents</h2>
+<p>Mongotoy simplifies the process of exporting document data by offering three distinct methods: 
+<code>dump_dict</code>, <code>dump_json</code>, and <code>dump_bson</code>. These three methods offer flexibility, allowing you to choose the
+appropriate format based on needs and integration requirements.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>dump_json</code> and <code>dump_bson</code> methods prepare data for compatibility with JSON and BSON formats respectively. 
+However, they don't perform serialization themselves, to fully serialize the data you'll need to use an 
+appropriate third-party library.</p>
+</div>
+<h3 id="dump-as-dict">Dump as dict</h3>
+<p>The <code>dump_dict</code> method converts document data into a Python dictionary format, facilitating integration with
+Python-based workflows and applications. It supports the following customization parameters to tailor the output 
+according to specific requirements.</p>
+<ul>
+<li><strong>by_alias</strong>: Dumping by fields aliases. (default is False)</li>
+<li><strong>exclude_empty</strong>: Exclude fields with empty values from the output. (default is False)</li>
+<li><strong>exclude_null</strong>: Exclude fields with null values from the output. (default is False)</li>
+</ul>
+<h3 id="dump-as-json">Dump as json</h3>
+<p>The <code>dump_json</code> method export the document data in a format compatible with JSON, facilitating
+interoperability with various systems and services supporting JSON data exchange. It supports the following
+customization parameters to tailor the output according to specific requirements.</p>
+<ul>
+<li><strong>by_alias</strong>: Dumping by fields aliases. (default is False)</li>
+<li><strong>exclude_null</strong>: Exclude fields with null values from the output. (default is False)</li>
+</ul>
+<h3 id="dump-as-bson">Dump as bson</h3>
+<p>The <code>dump_bson</code> method export the document data in a format compatible with BSON for seamless interaction 
+with MongoDB database. It supports the following customization parameters to tailor the output 
+according to specific requirements.</p>
+<ul>
+<li><strong>by_alias</strong>: Dumping by fields aliases. (default is True)</li>
+<li><strong>exclude_null</strong>: Exclude fields with null values from the output. (default is False)</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>dump_json</code> and <code>dump_bson</code> methods exclude empty values from the output, unlike <code>dump_dict</code>, which includes 
+them optionally.</p>
+</div>
+<p>Through these versatile dumping methods, Mongotoy empowers you to work with document data in various formats,
+catering to diverse data processing and integration requirements. Whether it's within Python environments, 
+interoperating with JSON-compatible systems, or interacting with MongoDB databases, Mongotoy provides the 
+flexibility and compatibility needed for efficient data management and integration.</p>
 
 
 
