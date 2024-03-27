@@ -48,6 +48,17 @@ markdown_extensions:
       linenums: true
 
 nav:
-  - Mongotoy: index.md
-  - Documents: documents.md
-
+  - Home: index.md
+  - Quick Start: quick_start.md
+  - Docs:
+      - Documents: docs/documents.md
+      - Data Types: docs/data_types.md
+      - Fields: docs/fields.md
+      - References: docs/references.md
+      - Engine: docs/engine.md
+      - Session: docs/session.md
+      - Transaction: docs/transaction.md
+      - Objects: docs/objects.md
+      - Files: docs/files.md
+      - Migrations: docs/migrations.md
+      - Seeding: docs/seeding.md
