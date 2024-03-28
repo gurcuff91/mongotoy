@@ -31,6 +31,13 @@ to generate **fields** accordingly. Attributes _without type annotations_ will b
 class fields.
 ///
 
+/// note
+By default, Mongotoy does **not require** any field values to be specified during document creation, aligning with
+MongoDB's schemaless nature. Unspecified field values are set to `mongotoy.expressions.EmptyValue`, and Mongotoy 
+only validates the values of fields that have been explicitly specified. The exception to this rule is the `id` field,
+which must have at least one default value defined either through the `default` or `default_factory` properties.
+///
+
 ### The collection name
 
 By default, Mongotoy pluralizes the lowercase class name to determine the collection name. So, in this 
@@ -107,14 +114,6 @@ class Address(EmbeddedDocument):
     country: str
 ````
 
-/// note
-By default, Mongotoy does **not require** any field values to be specified during document creation, aligning with
-MongoDB's schemaless nature. Unspecified field values are set to `mongotoy.expressions.EmptyValue`, and Mongotoy 
-only validates the values of fields that have been explicitly specified. The exception to this rule is the `id` field,
-which must have at least one default value defined either through the `default` or `default_factory` properties.
-///
-
-
 ## Dumping documents
 
 Mongotoy simplifies the process of exporting document data by offering three distinct methods: 
@@ -122,7 +121,7 @@ Mongotoy simplifies the process of exporting document data by offering three dis
 appropriate format based on needs and integration requirements.
 
 /// note
-The `dump_json` and `dump_bson` methods prepare data for compatibility with JSON and BSON formats respectively. 
+The `dump_json` and `dump_bson` methods only prepares data for compatibility with JSON and BSON formats respectively. 
 However, they don't perform serialization themselves, to fully serialize the data you'll need to use an 
 appropriate third-party library.
 ///
