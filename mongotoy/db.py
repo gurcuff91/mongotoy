@@ -220,7 +220,7 @@ class Engine:
 
             # Unwrap ManyMapper
             mapper = field.mapper
-            if isinstance(mapper, mappers.ManyMapper):
+            if isinstance(mapper, mappers.SequenceMapper):
                 mapper = mapper.unwrap()
 
             # Add Geo Index

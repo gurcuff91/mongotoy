@@ -1,20 +1,36 @@
-import types
+import dataclasses
 import typing
 
 import pymongo
 
-from mongotoy import expressions, cache, mappers
+from mongotoy import expressions, mappers
 from mongotoy.errors import ValidationError, ErrorWrapper
 
-if typing.TYPE_CHECKING:
-    from mongotoy import documents
 
-
-# Expose specific symbols for external use
 __all__ = (
+    'FieldOptions',
     'field',
     'reference',
 )
+
+
+@dataclasses.dataclass
+class FieldOptions(mappers.MapperOptions):
+    """
+    Represents the options for configuring a field in a document.
+    Inherits from MapperOptions and adds additional attributes for field customization.
+    Attributes:
+        alias (str): Alias name for the field. Defaults to None.
+        id_field (bool): Flag indicating whether the field is the primary key. Defaults to False.
+        index (expressions.IndexType): Type of index to apply to the field. Defaults to None.
+        sparse (bool): Flag indicating whether the index should be sparse. Defaults to False.
+        unique (bool): Flag indicating whether the field value must be unique. Defaults to False.
+    """
+    alias: str = dataclasses.field(default=None)
+    id_field: bool = dataclasses.field(default=False)
+    index: expressions.IndexType = dataclasses.field(default=None)
+    sparse: bool = dataclasses.field(default=False)
+    unique: bool = dataclasses.field(default=False)
 
 
 def field(
@@ -24,8 +40,9 @@ def field(
         default_factory: typing.Callable[[], typing.Any] = None,
         index: expressions.IndexType = None,
         sparse: bool = False,
-        unique: bool = False
-) -> dict:
+        unique: bool = False,
+        **extra
+) -> FieldOptions:
     """
     Create a field descriptor for a document.
 
@@ -37,24 +54,25 @@ def field(
         index (IndexType, optional): Type of index for the field. Defaults to None.
         sparse (bool, optional): Whether the index should be sparse. Defaults to False.
         unique (bool, optional): Whether the index should be unique. Defaults to False.
+        extra: Extra configurations
 
     Returns:
-        dict: Field descriptor.
+        FieldOptions: Field descriptor.
 
     """
-    return {
-        'type': 'field',
-        'alias': alias,
-        'id_field': id_field,
-        'default': default,
-        'default_factory': default_factory,
-        'index': index,
-        'sparse': sparse,
-        'unique': unique
-    }
+    return FieldOptions(
+        alias=alias,
+        id_field=id_field,
+        default=default,
+        default_factory=default_factory,
+        index=index,
+        sparse=sparse,
+        unique=unique,
+        extra=extra
+    )
 
 
-def reference(ref_field: str = 'id', key_name: str = None) -> dict:
+def reference(ref_field: str = 'id', key_name: str = None) -> FieldOptions:
     """
     Create a reference field descriptor for a document.
 
@@ -63,14 +81,10 @@ def reference(ref_field: str = 'id', key_name: str = None) -> dict:
         key_name (str, optional): Key name for the reference. Defaults to None.
 
     Returns:
-        dict: Reference field descriptor.
+        RefFieldOptions: Reference field descriptor.
 
     """
-    return {
-        'type': 'reference',
-        'ref_field': ref_field,
-        'key_name': key_name,
-    }
+    return FieldOptions(ref_field=ref_field, key_name=key_name)
 
 
 class Field:
@@ -82,135 +96,23 @@ class Field:
 
     Args:
         mapper (Mapper): The mapper object for the field.
-        alias (str, optional): Alias for the field. Defaults to None.
-        id_field (bool, optional): Indicates if the field is an ID field. Defaults to False.
-        index (IndexType, optional): Type of index for the field. Defaults to None.
-        sparse (bool, optional): Whether the index should be sparse. Defaults to False.
-        unique (bool, optional): Whether the index should be unique. Defaults to False.
-
+        options (FieldOptions): File configuration params.
     """
 
     def __init__(
         self,
         mapper: mappers.Mapper,
-        alias: str = None,
-        id_field: bool = False,
-        index: expressions.IndexType = None,
-        sparse: bool = False,
-        unique: bool = False
+        options: FieldOptions
     ):
         # If it's an ID field, enforce specific settings
-        if id_field:
-            alias = '_id'
+        if options.id_field:
+            options.alias = '_id'
 
         # Initialize field attributes
         self._owner = None
         self._name = None
         self._mapper = mapper
-        self._alias = alias
-        self._id_field = id_field
-        self._index = index
-        self._sparse = sparse
-        self._unique = unique
-
-    @classmethod
-    def _build_mapper(cls, mapper_bind: typing.Type, **options) -> mappers.Mapper:
-        """
-        Build a data mapper based on annotations.
-
-        Args:
-            mapper_bind (Type): Type annotation for the mapper.
-            **options: Additional options.
-
-        Returns:
-            Mapper: The constructed data mapper.
-
-        Raises:
-            TypeError: If the mapper type is not recognized.
-        """
-        from mongotoy import documents
-
-        # Simple type annotation
-        if not typing.get_args(mapper_bind):
-            # Extract mapper_bind from ForwardRef
-            if isinstance(mapper_bind, typing.ForwardRef):
-                mapper_bind = getattr(mapper_bind, '__forward_arg__')
-
-            # Set up mapper parameters
-            mapper_params = {
-                'nullable': options.get('nullable', False),
-                'default': options.get('default', expressions.EmptyValue),
-                'default_factory': options.get('default_factory', None),
-            }
-            is_reference = options.get('type') == 'reference'
-            is_document_cls = isinstance(mapper_bind, type) and issubclass(mapper_bind, documents.Document)
-
-            # Create embedded or reference document mapper
-            if isinstance(mapper_bind, str) or issubclass(mapper_bind, documents.BaseDocument):
-                mapper_params['document_cls'] = mapper_bind
-                mapper_bind = mappers.EmbeddedDocumentMapper
-
-                # Create reference document mapper
-                if is_reference or is_document_cls:
-                    mapper_params['ref_field'] = options.get('ref_field', 'id')
-                    mapper_params['key_name'] = options.get('key_name')
-                    mapper_bind = mappers.ReferencedDocumentMapper
-
-            # Create the mapper
-            mapper_cls = cache.mappers.get_type(mapper_bind)
-            if not mapper_cls:
-                raise TypeError(f'Data mapper not found for type {mapper_bind}')
-
-            return mapper_cls(**mapper_params)
-
-        # Get type origin and arguments
-        type_origin = typing.get_origin(mapper_bind)
-        type_args = typing.get_args(mapper_bind)
-        mapper_bind = type_args[0]
-
-        # Check for nullable type
-        if type_origin in (typing.Union, types.UnionType) and len(type_args) > 1 and type_args[1] is types.NoneType:
-            options['nullable'] = True
-            return cls._build_mapper(mapper_bind, **options)
-
-        # Create many mapper
-        if type_origin in (list, tuple, set):
-            mapper_cls = cache.mappers.get_type(type_origin)
-            return mapper_cls(
-                nullable=options.pop('nullable', False),
-                default=options.pop('default', expressions.EmptyValue),
-                default_factory=options.pop('default_factory', None),
-                mapper=cls._build_mapper(mapper_bind, **options)
-            )
-
-        raise TypeError(
-            f'Invalid outer annotation {type_origin}, allowed are [{list, tuple, set}, {typing.Optional}]'
-        )
-
-    @classmethod
-    def from_annotated_type(cls, anno_type: typing.Type, info: dict) -> 'Field':
-        """
-        Create a Field instance from an annotated type.
-
-        Args:
-            anno_type (Type): Annotated type for the field.
-            info (dict, optional): Additional information about the field. Defaults to {}.
-
-        Returns:
-            Field: The constructed Field instance.
-
-        """
-        return Field(
-            mapper=cls._build_mapper(
-                mapper_bind=anno_type,
-                **info
-            ),
-            alias=info.get('alias'),
-            id_field=info.get('id_field', False),
-            index=info.get('index'),
-            sparse=info.get('sparse', False),
-            unique=info.get('unique', False)
-        )
+        self._options = options
 
     @property
     def mapper(self) -> mappers.Mapper:
@@ -243,18 +145,7 @@ class Field:
             str: The alias of the field, or its name if no alias is set.
 
         """
-        return self._alias or self._name
-
-    @property
-    def id_field(self) -> bool:
-        """
-        Check if the field is an ID field.
-
-        Returns:
-            bool: True if it's an ID field, False otherwise.
-
-        """
-        return self._id_field
+        return self._options.alias or self._name
 
     def __set_name__(self, owner, name):
         """
@@ -306,15 +197,15 @@ class Field:
 
         """
         index = None
-        if self._unique or self._sparse:
+        if self._options.unique or self._options.sparse:
             index = pymongo.ASCENDING
-        if self._index is not None:
-            index = self._index
+        if self._options.index is not None:
+            index = self._options.index
         if index:
             return pymongo.IndexModel(
                 keys=[(self.alias, index)],
-                unique=self._unique,
-                sparse=self._sparse
+                unique=self._options.unique,
+                sparse=self._options.sparse
             )
 
     def validate(self, value) -> typing.Any:
@@ -472,7 +363,7 @@ class FieldProxy:
         """
         # Unwrap ManyMapper
         mapper = self._field.mapper
-        if isinstance(mapper, mappers.ManyMapper):
+        if isinstance(mapper, mappers.SequenceMapper):
             mapper = mapper.unwrap()
 
         # Unwrap EmbeddedDocumentMapper or ReferencedDocumentMapper
