@@ -962,6 +962,13 @@ to a collection:</p>
 to generate <strong>fields</strong> accordingly. Attributes <em>without type annotations</em> will be ignored and treated as regular
 class fields.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, Mongotoy does <strong>not require</strong> any field values to be specified during document creation, aligning with
+MongoDB's schemaless nature. Unspecified field values are set to <code>mongotoy.expressions.EmptyValue</code>, and Mongotoy 
+only validates the values of fields that have been explicitly specified. The exception to this rule is the <code>id</code> field,
+which must have at least one default value defined either through the <code>default</code> or <code>default_factory</code> properties.</p>
+</div>
 <h3 id="the-collection-name">The collection name</h3>
 <p>By default, Mongotoy pluralizes the lowercase class name to determine the collection name. So, in this 
 case, the collection name will be <code>persons</code>. </p>
@@ -1033,20 +1040,13 @@ class attributes in a manner similar to how you would define a <a href="#documen
     <span class="n">zipcode</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">country</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div></td></tr></table></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>By default, Mongotoy does <strong>not require</strong> any field values to be specified during document creation, aligning with
-MongoDB's schemaless nature. Unspecified field values are set to <code>mongotoy.expressions.EmptyValue</code>, and Mongotoy 
-only validates the values of fields that have been explicitly specified. The exception to this rule is the <code>id</code> field,
-which must have at least one default value defined either through the <code>default</code> or <code>default_factory</code> properties.</p>
-</div>
 <h2 id="dumping-documents">Dumping documents</h2>
 <p>Mongotoy simplifies the process of exporting document data by offering three distinct methods: 
 <code>dump_dict</code>, <code>dump_json</code>, and <code>dump_bson</code>. These three methods offer flexibility, allowing you to choose the
 appropriate format based on needs and integration requirements.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <code>dump_json</code> and <code>dump_bson</code> methods prepare data for compatibility with JSON and BSON formats respectively. 
+<p>The <code>dump_json</code> and <code>dump_bson</code> methods only prepares data for compatibility with JSON and BSON formats respectively. 
 However, they don't perform serialization themselves, to fully serialize the data you'll need to use an 
 appropriate third-party library.</p>
 </div>
