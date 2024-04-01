@@ -1,0 +1,1394 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Async ODM for MongoDB.">
+      
+      
+        <meta name="author" content="Gustavo F. Meneses Perez">
+      
+      
+        <link rel="canonical" href="https://github.com/gurcuff91/mongotoy/docs/database/">
+      
+      
+        <link rel="prev" href="../references/">
+      
+      
+        <link rel="next" href="../objects/">
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+    
+    
+      
+        <title>Database - Mongotoy</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Ubuntu";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#engine" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Mongotoy" class="md-header__button md-logo" aria-label="Mongotoy" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Mongotoy
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/gurcuff91/mongotoy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gurcuff91/mongotoy
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quick_start/" class="md-tabs__link">
+        
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../documents/" class="md-tabs__link">
+          
+  
+    
+  
+  Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Mongotoy" class="md-nav__button md-logo" aria-label="Mongotoy" data-md-component="logo">
+      
+  <img src="../../assets/logo.png" alt="logo">
+
+    </a>
+    Mongotoy
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/gurcuff91/mongotoy" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    gurcuff91/mongotoy
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick_start/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quick Start
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Docs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_types/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Types
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fields/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fields
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Database
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Engine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database connection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open session
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open transaction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-seeding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute seeding
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      Session
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lifecycle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-transaction_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open transaction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Objects
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Saving documents
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deleting documents
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Transaction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transaction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lifecycle
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../objects/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Objects
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      Engine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database connection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open session
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open transaction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-seeding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute seeding
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      Session
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lifecycle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-transaction_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open transaction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      Objects
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Saving documents
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deleting documents
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Transaction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Transaction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lifecycle
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>Database</h1>
+
+<style>
+    .md-typeset h1{
+        display: none;
+    }
+    .md-sidebar--primary {
+        width: 8rem;
+    }
+</style>
+
+<h2 id="engine">Engine</h2>
+<p>The <code>Engine</code> class in Mongotoy serves as a versatile interface for managing MongoDB databases, providing a 
+comprehensive set of features to streamline database operations. With asynchronous support built-in, it efficiently 
+handles tasks like database connection, sessions, migrations, and seeding, ensuring seamless interactions. 
+You can customize database interactions by specifying options such as <em>codec options</em>, <em>read preference</em>, 
+<em>read concern</em>, and <em>write concern</em>, tailoring the functionality to specific requirements.</p>
+<p>The Engine class accepts the following params:</p>
+<ul>
+<li><strong>database</strong>: The name of the MongoDB database.</li>
+<li><strong>codec_options</strong>: The BSON codec options.</li>
+<li><strong>read_preference</strong>: The read preference for the MongoDB client.</li>
+<li><strong>read_concern</strong>: The read concern for the MongoDB client.</li>
+<li><strong>write_concern</strong>: The written concern for the MongoDB client.</li>
+</ul>
+<p>The following example shows how to initialize the Engine
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">import</span> <span class="nn">bson</span>
+<span class="kn">import</span> <span class="nn">pymongo</span>
+<span class="kn">from</span> <span class="nn">pymongo.read_concern</span> <span class="kn">import</span> <span class="n">ReadConcern</span>
+<span class="kn">from</span> <span class="nn">mongotoy</span> <span class="kn">import</span> <span class="n">Engine</span>
+
+<span class="c1"># Create database engine</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;my-test-db&#39;</span><span class="p">,</span>
+    <span class="n">codec_options</span><span class="o">=</span><span class="n">bson</span><span class="o">.</span><span class="n">CodecOptions</span><span class="p">(</span><span class="n">uuid_representation</span><span class="o">=</span><span class="n">bson</span><span class="o">.</span><span class="n">JAVA_LEGACY</span><span class="p">),</span>    
+    <span class="n">read_preference</span><span class="o">=</span><span class="n">pymongo</span><span class="o">.</span><span class="n">ReadPreference</span><span class="o">.</span><span class="n">PRIMARY</span><span class="p">,</span>
+    <span class="n">read_concern</span><span class="o">=</span><span class="n">ReadConcern</span><span class="p">(</span><span class="s1">&#39;majority&#39;</span><span class="p">),</span>
+    <span class="n">write_concern</span><span class="o">=</span><span class="n">pymongo</span><span class="o">.</span><span class="n">WriteConcern</span><span class="p">(</span><span class="n">w</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div></td></tr></table></div></p>
+<p>This example initializes an <code>Engine</code> instance with specified configuration. It sets the target database to
+<code>my-test-db</code> and configures <code>codec_options</code> to use the <em>Java Legacy UUID</em> representation. Additionally, it specifies
+<code>read_preference</code> as <em>primary</em> , a <code>read_concern</code> of <code>majority</code>, and a <code>write_concern</code> with a <code>w=2</code>. Overall, 
+the setup ensures compatibility and consistency in database interactions.</p>
+<p>The <code>Engine</code> class offers convenient properties and methods for seamless access to various MongoDB components. 
+With properties like <code>.client</code>, <code>.database</code>, and methods like <code>.collection()</code> and <code>.gridfs()</code>, you can effortlessly 
+interact with the underlying MongoDB client, database collections, and GridFS buckets.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Access to an underlying client</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">client</span>
+
+<span class="c1"># Access to an underlying database</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">database</span>
+
+<span class="c1"># Get a collection named &#39;users&#39;</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">)</span>
+
+<span class="c1"># Get a bucket named &#39;images&#39;</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">gridfs</span><span class="p">(</span><span class="s1">&#39;images&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="database-connection">Database connection</h3>
+<p>The <code>engine.connect()</code> function establishes a connection to the MongoDB server asynchronously. It accepts connection 
+arguments for <a href="https://motor.readthedocs.io/en/stable/api-asyncio/asyncio_motor_client.html">AsyncIOMotorClient</a> and 
+includes an optional parameter, <code>ping</code>, which determines whether to ping the server after establishing the connection.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Connect to a local db, and send ping command</span>
+<span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">&#39;mongodb://localhost:27017&#39;</span><span class="p">,</span> <span class="n">ping</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition warning">
+<p class="admonition-title">Attention</p>
+<p>Before accessing any features of the <code>Engine</code> class, ensure it is connected to the database using the <code>connect()</code> method.
+Failure to do so will result in a <code>mongotoy.errors.EngineError</code>.</p>
+</div>
+<h3 id="open-session">Open session</h3>
+<p>To open a new database session, use the <code>engine.session()</code> function. The <code>Session</code> object supports context handling,
+enabling you to use it within a context; this ensures the proper <em>starting/ending</em> of the session. 
+See <a href="#session">session</a></p>
+<h3 id="open-transaction">Open transaction</h3>
+<p>To open a new database transaction, use the <code>engine.transaction()</code> function. The <code>Transaction</code> object supports 
+context handling, enabling you to use it within a context; this ensures the proper <em>starting/commit/abort</em> of the 
+transaction. See <a href="#transaction">transaction</a></p>
+<h3 id="execute-migration">Execute migration</h3>
+<p>Migrations in <code>Mongotoy</code> cover a range of tasks essential for seamlessly transitioning your data structures into
+MongoDB. These tasks include migrating <em>indexes</em>, creating <em>capped collections</em>, and defining <em>time series</em> collections.
+This comprehensive support ensures that your data migration process is efficient and encompasses all necessary 
+configurations for optimal data management in MongoDB.</p>
+<p>To migrate a document, use the <code>engine.migrate()</code> or <code>engine.migrate_all()</code> functions as follows:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open database session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Migrate single document</span>
+    <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">migrate</span><span class="p">(</span><span class="n">Person</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+
+    <span class="c1"># Migrate many documents</span>
+    <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">migrate_all</span><span class="p">([</span><span class="n">Author</span><span class="p">,</span> <span class="n">Book</span><span class="p">],</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Migrations are only applied if the associated collection for the document does not already exist in the database.</p>
+</div>
+<h3 id="execute-seeding">Execute seeding</h3>
+<p>Seeding in <code>Mongotoy</code> provides a convenient way to populate your database with <em>initial data</em>, ensuring that your 
+database is preloaded with the necessary information to kickstart your application or project. It allows you to 
+define and execute seeding functions that insert predefined data into your MongoDB collections, helping you streamline
+the setup process and accelerate development.</p>
+<p>To execute a seeding function, use the <code>engine.seeding()</code> or <code>engine.seeding_all()</code> functions as follows:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.db</span> <span class="kn">import</span> <span class="n">Session</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">seeder_01</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+    <span class="c1"># Exec some data insertions here ...</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">seeder_02</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">):</span>
+    <span class="c1"># Exec some data insertions here ...</span>
+
+<span class="c1"># Open database session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Seed one function</span>
+    <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">seeding</span><span class="p">(</span><span class="n">seeder_01</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+
+    <span class="c1"># Seed many functions</span>
+    <span class="k">await</span> <span class="n">engine</span><span class="o">.</span><span class="n">seeding_all</span><span class="p">([</span><span class="n">seeder_01</span><span class="p">,</span> <span class="n">seeder_02</span><span class="p">],</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Seeding functions are applied only once, regardless of how many times they are executed. They are registered in a 
+collection named <code>mongotoy.seeding</code>, ensuring that they are executed only once to prevent duplicate data seeding.</p>
+</div>
+<h2 id="session">Session</h2>
+<p>The <code>Session</code> class in Mongotoy provides a context manager for managing MongoDB database operations within a 
+transaction-like context. It facilitates starting and ending MongoDB sessions, allowing for efficient handling 
+of database transactions. Additionally, it offers methods for managing transactions, accessing object managers for
+document classes, interacting with GridFS buckets, saving documents to the database, deleting documents, 
+and managing cascading deletes. Through its asynchronous support, it ensures smooth and streamlined database 
+operations, enhancing the overall efficiency of MongoDB interactions.</p>
+<p>The <code>Session</code> class provides properties for managing MongoDB sessions and database interactions. 
+These properties include:</p>
+<ul>
+<li>
+<p><strong>engine</strong>: Represents the <code>Engine</code> associated with the session, enabling direct access to database operations
+and configurations.</p>
+</li>
+<li>
+<p><strong>started</strong>: Indicates whether the session has been initialized, offering a boolean value to track session status.</p>
+</li>
+<li>
+<p><strong>driver_session</strong>: Offers access to the underlying MongoDB driver session, facilitating low-level database 
+operations and transactions.</p>
+</li>
+</ul>
+<h3 id="lifecycle">Lifecycle</h3>
+<p>The <code>Session</code> class offers a flexible approach to managing its lifecycle. While it provides a context manager 
+interface for automatic lifecycle management, you can also control it manually using the <code>start()</code> and <code>end()</code> methods.
+Sessions must always be instantiated from an <code>Engine</code> instance using the <code>engine.session()</code> function.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session with context</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+    <span class="c1"># Exec session operations here ...</span>
+
+
+<span class="c1"># Open db session with no context</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="c1"># Exec session operations here ...</span>
+<span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>These examples showcase two methods of opening a database session with Mongotoy's Engine class. The first one uses 
+a context manager, ensuring proper session handling and cleanup after execution. The second method directly initializes
+a session without context management, requiring explicit invocation of methods for session initiation and termination.</p>
+<h3 id="open-transaction_1">Open transaction</h3>
+<p>To open a new database transaction, use the <code>session.transaction()</code> function. The <code>Transaction</code> object supports 
+context handling, enabling you to use it within a context; this ensures the proper <em>starting/commit/abort</em> of the 
+transaction. See <a href="#transaction">transaction</a></p>
+<h3 id="objects">Objects</h3>
+<p>The <code>objects</code> method in the <code>Session</code> class facilitates the creation of an <code>Objects</code> instance, which allows for 
+querying documents of a specified type within the session context. It provides flexibility in querying documents 
+and supports deep dereferencing when needed. See <a href="/gurcuff91/mongotoy/docs/objects">objects</a></p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Get objects for Person document</span>
+    <span class="n">persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span>
+
+    <span class="c1"># Eexec operations over persons ...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="files">Files</h3>
+<p>The <code>fs</code> method in the <code>Session</code> class facilitates seamless interaction with GridFS, a MongoDB feature for storing 
+and retrieving large files such as images, videos, and documents. With this method, users can efficiently manage 
+file storage directly within the database, ensuring robust and scalable file handling capabilities.
+See <a href="/gurcuff91/mongotoy/docs/files">files</a></p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Get fs bucket</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">fs</span><span class="p">()</span>
+
+    <span class="c1"># Eexec operations over files ...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="saving-documents">Saving documents</h3>
+<p>The <code>save</code> and <code>save_all</code> methods in the <code>Session</code> class enable the efficient persistence of MongoDB documents 
+into the associated database. By invoking these methods, you can seamlessly store individual documents or batches of 
+documents while ensuring data integrity and consistency. This functionality streamlines the process of data storage,
+enhancing the overall efficiency and reliability of database operations.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Save a single person</span>
+    <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">person_01</span><span class="p">)</span>
+
+    <span class="c1"># Save many persons</span>
+    <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">save_all</span><span class="p">([</span><span class="n">person_01</span><span class="p">,</span> <span class="n">person_02</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+<p>By default, the saving methods do not include saving references. However, you can enable this functionality by 
+<code>setting save_references=True</code>. This feature allows for the comprehensive storage of documents along with their
+associated references, enhancing the integrity and completeness of the data stored in the MongoDB database.</p>
+<h3 id="deleting-documents">Deleting documents</h3>
+<p>The <code>delete</code> and <code>delete_all</code> methods in the <code>Session</code> class facilitate the removal of documents from the MongoDB 
+database. These methods provide a convenient way to delete individual documents or multiple documents at once. 
+Additionally, they offer support for cascading deletion, allowing for the removal of associated documents as well.
+This ensures efficient and streamlined data management within MongoDB, empowering users to maintain data integrity
+and cleanliness effectively.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Delete a single person</span>
+    <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">person_01</span><span class="p">)</span>
+
+    <span class="c1"># Delete many persons</span>
+    <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">delete_all</span><span class="p">([</span><span class="n">person_01</span><span class="p">,</span> <span class="n">person_02</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+<p>By default, the deletion methods do not remove associated references, but you can activate this functionality by 
+setting <code>delete_cascade=True</code>. This feature allows for the removal of related references along with the specified 
+documents, ensuring comprehensive data cleanup and management.</p>
+<h2 id="transaction">Transaction</h2>
+<p>The <code>Transaction</code> class within Mongotoy encapsulates MongoDB transactions, offering a robust mechanism to maintain
+data consistency by executing operations atomically. It accommodates both <code>Session</code> and <code>Engine</code> instances to 
+initiate transactions and facilitates operations such as starting, committing, and aborting transactions, it ensures
+smooth transaction handling within asynchronous contexts, enhancing the reliability of database interactions.</p>
+<p>The <code>Transaction</code> class features properties and methods tailored to manage MongoDB transactions efficiently. 
+Its properties include:</p>
+<ul>
+<li>
+<p><strong>session</strong>: Retrieves the associated MongoDB session for the transaction, enabling seamless interaction with
+the database.</p>
+</li>
+<li>
+<p><strong>started</strong>: Indicates whether the transaction has been initiated, facilitating status monitoring during 
+transaction execution.</p>
+</li>
+</ul>
+<h3 id="lifecycle_1">Lifecycle</h3>
+<p>The <code>Transaction</code> class is crucial for MongoDB transaction management, offering methods like <code>start()</code>, <code>commit(</code>), 
+and <code>abort()</code> for handling transactions efficiently. It also provides a context manager interface for automatic
+lifecycle management. Sessions must be instantiated using <code>engine.transaction()</code> or<code>session.transaction()</code> functions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Start transaction from session</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
+        <span class="c1"># Exec session operations inside transaction here ...</span>
+
+
+<span class="c1"># Open transaction from engine</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">transaction</span><span class="p">()</span> <span class="k">as</span> <span class="n">tx</span><span class="p">:</span>
+
+    <span class="c1"># Get transaction related session</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">session</span>    
+    <span class="c1"># Exec session operations inside transaction here ...</span>
+
+
+<span class="c1"># Handle transaction manually</span>
+<span class="n">tx</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">transaction</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">session</span>
+    <span class="c1"># Exec session operations here ...</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">abort</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>These examples demonstrate various ways to handle transactions with Mongotoy's Engine and Session classes. 
+The first approach initiates a transaction within a session context, ensuring automatic management. The second approach
+directly opens a transaction from the Engine, allowing operation execution within it. Lastly, the third approach 
+manually manages transaction lifecycle, providing flexibility but requiring explicit control over commit or 
+abort actions.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tabs", "navigation.indexes", "search.suggest", "content.code.copy"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      
+    
+  </body>
+</html>

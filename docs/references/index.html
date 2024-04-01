@@ -18,7 +18,7 @@
         <link rel="prev" href="../fields/">
       
       
-        <link rel="next" href="../engine/">
+        <link rel="next" href="../database/">
       
       
       <link rel="icon" href="../../assets/logo.png">
@@ -380,14 +380,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
       
@@ -573,53 +565,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../engine/" class="md-nav__link">
+      <a href="../database/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Engine
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../session/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Session
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../transaction/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Transaction
+    Database
   </span>
   
 
@@ -662,48 +612,6 @@
   
   <span class="md-ellipsis">
     Files
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrations/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Migrations
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../seeding/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Seeding
   </span>
   
 
@@ -840,12 +748,12 @@ denoting the individual's parent. Through the <code>mongotoy.reference()</code> 
 based on the <code>code</code> field of the referenced document. In the database, the reference key is labeled as <code>p_code</code>. 
 This setup ensures that when a <code>Person</code> document is saved, the <code>code</code> value of the referenced <code>Person</code> document 
 stored in the <code>parent</code> field is also stored in the current document under the <code>p_code</code> key.</p>
-<div class="admonition danger">
-<p class="admonition-title">Danger</p>
-<p>Utilizing <code>mongotoy.reference()</code> in a class that isn't derived from <code>mongotoy.Document</code>, or 
-omitting <code>mongotoy.reference()</code> when using a <code>mongotoy.Document</code> based class as a 
-<a href="/gurcuff91/mongotoy/docs/data_types/#forwarding-types">forwarded type</a>, will result in a
-<code>mongotoy.errors.DocumentValidation</code> error during document instantiation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Attention</p>
+<p>When defining references with <a href="/gurcuff91/mongotoy/docs/data_types/#forwarding-types">forwarded types</a>, 
+using <code>mongotoy.reference()</code> with a type that isn't derived from <code>mongotoy.Document</code>, or omitting <code>mongotoy.reference()</code> 
+when using a<code>mongotoy.Document</code> derived type, will result in a <code>mongotoy.errors.DocumentValidation</code> error during
+document instantiation.</p>
 </div>
 
 

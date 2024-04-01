@@ -380,14 +380,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
       
@@ -531,6 +523,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#using-extra-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using extra configurations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using extra configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparable-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparable types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      String type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -573,53 +598,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../engine/" class="md-nav__link">
+      <a href="../database/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Engine
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../session/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Session
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../transaction/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Transaction
+    Database
   </span>
   
 
@@ -662,48 +645,6 @@
   
   <span class="md-ellipsis">
     Files
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migrations/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Migrations
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../seeding/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Seeding
   </span>
   
 
@@ -760,6 +701,39 @@
       Customization Parameters
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-extra-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using extra configurations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using extra configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparable-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparable types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      String type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -842,6 +816,47 @@ The <code>code</code> field serves as the <em>primary key</em>, automatically ge
 <code>uuid.uuid4().hex</code>. Additionally, the <code>name</code> field is indexed for text search using <code>pymongo.TEXT</code> and enforced
 as unique. The <code>age</code> field is indexed in descending order to optimize sorting operations. Finally, the dob field 
 defaults to the current date using <code>datetime.date.today()</code>. </p>
+<h3 id="using-extra-configurations">Using extra configurations</h3>
+<p>The <code>mongotoy.field()</code> function accommodates an arbitrary number of additional parameters for fine-tuning field 
+creation and validation. Certain <a href="/gurcuff91/mongotoy/docs/data_types">data types</a> support specific configuration 
+parameters.</p>
+<h4 id="comparable-types">Comparable types</h4>
+<p>Comparable types such as <code>int</code>, <code>float</code>, <code>decimal.Decimal</code>, <code>datetime.datetime</code>, <code>datetime.date</code> and <code>datetime.time</code>
+enable comparison operations between values of the same type. These types support various comparison
+configuration parameters to fine-tune how comparisons are conducted.</p>
+<ul>
+<li><strong>lt</strong> (less than)</li>
+<li><strong>lte</strong> (less than or equal to)</li>
+<li><strong>gt</strong> (greater than)</li>
+<li><strong>gte</strong> (greater than or equal to)</li>
+</ul>
+<h4 id="string-type">String type</h4>
+<p>In addition, the <code>str</code> type supports several configuration parameters for customization:</p>
+<ul>
+<li><strong>min_len</strong>: Specifies the minimum length allowed for the string.</li>
+<li><strong>max_len</strong>: Specifies the maximum length allowed for the string.</li>
+<li><strong>choices</strong>: Defines a list of valid choices for the string value.</li>
+</ul>
+<p>The following example shows how to use extra configuration parameters:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy</span> <span class="kn">import</span> <span class="n">Document</span><span class="p">,</span> <span class="n">field</span>
+
+
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">Document</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">max_len</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">gte</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+    <span class="n">fav_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+<p>In this example, the <code>Person</code> document defines three fields: <code>name</code>, <code>age</code>, and <code>fav_color</code>. The <code>name</code> field is of 
+type <code>str</code> and is configured with a <em>maximum length</em> of 128 characters. For the <code>age</code> field, which is of type <code>int</code>, a 
+<em>minimum value</em> of 21 is specified. Lastly, the <code>fav_color</code> field, also of type <code>str</code>, is constrained to a predefined 
+set of <em>choices</em>: <code>'white', 'black', 'red', 'blue', and 'green'</code>. Any validation that violates these rules will 
+raise a <code>mongotoy.error.DocumentValidation</code> error.</p>
 
 
 
