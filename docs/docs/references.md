@@ -48,9 +48,9 @@ based on the `code` field of the referenced document. In the database, the refer
 This setup ensures that when a `Person` document is saved, the `code` value of the referenced `Person` document 
 stored in the `parent` field is also stored in the current document under the `p_code` key.
 
-/// danger
-Utilizing `mongotoy.reference()` in a class that isn't derived from `mongotoy.Document`, or 
-omitting `mongotoy.reference()` when using a `mongotoy.Document` based class as a 
-[forwarded type](/gurcuff91/mongotoy/docs/data_types/#forwarding-types), will result in a
-`mongotoy.errors.DocumentValidation` error during document instantiation.
+/// warning | Attention
+When defining references with [forwarded types](/gurcuff91/mongotoy/docs/data_types/#forwarding-types), 
+using `mongotoy.reference()` with a type that isn't derived from `mongotoy.Document`, or omitting `mongotoy.reference()` 
+when using a` mongotoy.Document` derived type, will result in a `mongotoy.errors.DocumentValidation` error during
+document instantiation.
 ///

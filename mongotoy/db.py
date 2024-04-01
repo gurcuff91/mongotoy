@@ -165,9 +165,9 @@ class Engine:
 
     # noinspection SpellCheckingInspection
     def gridfs(
-            self,
-            bucket_name: str = 'fs',
-            chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
+        self,
+        bucket_name: str = 'fs',
+        chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
     ) -> AgnosticGridFSBucket:
         """
         Retrieves the GridFS bucket.
@@ -337,12 +337,12 @@ class Engine:
 
         Args:
             document_cls (typing.Type[T]): The document class.
-            skip_exist (bool, optional): Whether to skip if collection exists.
+            skip_exist (bool, optional): Whether to skip if a collection exists.
             driver_session (AgnosticClientSession, optional): The database session.
         """
         do_apply = True
 
-        # Skip if collection already exists
+        # Skip if a collection already exists
         if skip_exist:
             collections = await self.database.list_collection_names(session=driver_session)
             if document_cls.__collection_name__ in collections:
@@ -462,22 +462,22 @@ class Engine:
 
 class Session(typing.AsyncContextManager):
     """
-        Represents a MongoDB session for performing database operations within a transaction-like context.
+    Represents a MongoDB session for performing database operations within a transaction-like context.
 
-        Args:
-            engine (Engine): The MongoDB engine associated with the session.
+    Args:
+        engine (Engine): The MongoDB engine associated with the session.
     """
+
     def __init__(self, engine: Engine):
+        # MongoDB engine associated with the session
         self._engine = engine
+        # MongoDB driver session
         self._driver_session = None
 
     @property
     def engine(self) -> Engine:
         """
         Returns the MongoDB engine associated with the session.
-
-        Returns:
-            Engine: The MongoDB engine.
         """
         return self._engine
 
@@ -485,9 +485,6 @@ class Session(typing.AsyncContextManager):
     def started(self) -> bool:
         """
         Returns a boolean indicating whether the session has been started.
-
-        Returns:
-            bool: True if the session has been started, False otherwise.
         """
         return self._driver_session is not None
 
@@ -498,9 +495,6 @@ class Session(typing.AsyncContextManager):
 
         Raises:
             EngineError: If the session is not started.
-
-        Returns:
-            AgnosticClientSession: The MongoDB driver session.
         """
         if not self.started:
             raise EngineError('Session not started')
@@ -532,9 +526,6 @@ class Session(typing.AsyncContextManager):
     async def __aenter__(self) -> 'Session':
         """
         Enables the use of the 'async with' statement.
-
-        Returns:
-            Session: The session instance.
         """
         await self.start()
         return self
@@ -542,11 +533,6 @@ class Session(typing.AsyncContextManager):
     async def __aexit__(self, __exc_type, __exc_value, __traceback) -> None:
         """
         Enables the use of the 'async with' statement. Ends the session upon exiting the context.
-
-        Args:
-            __exc_type: The type of the exception.
-            __exc_value: The exception value.
-            __traceback: The exception traceback.
         """
         await self.end()
 
@@ -560,12 +546,37 @@ class Session(typing.AsyncContextManager):
         return Transaction(provider=self)
 
     def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
+        """
+        Returns an object manager for the specified document class.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            dereference_deep (int): Depth of dereferencing.
+
+        Returns:
+            Objects[T]: An object manager.
+        """
         return Objects(document_cls, session=self, dereference_deep=dereference_deep)
 
     def fs(self, chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE) -> 'FsBucket':
+        """
+        Returns a GridFS bucket manager.
+
+        Args:
+            chunk_size_bytes (int): The chunk size in bytes.
+
+        Returns:
+            FsBucket: A GridFS bucket manager.
+        """
         return FsBucket(self, chunk_size_bytes=chunk_size_bytes)
 
     async def _save_references(self, doc: T):
+        """
+        Saves referenced documents.
+
+        Args:
+            doc (T): The document object.
+        """
         operations = []
         for field, reference in doc.__references__.items():
             obj = getattr(doc, field)
@@ -580,6 +591,13 @@ class Session(typing.AsyncContextManager):
         await asyncio.gather(*operations)
 
     async def save(self, doc: T, save_references: bool = False):
+        """
+        Saves a document to the database.
+
+        Args:
+            doc (T): The document object to save.
+            save_references (bool): Whether to save referenced documents.
+        """
         operations = []
         if save_references:
             operations.append(self._save_references(doc))
@@ -596,9 +614,22 @@ class Session(typing.AsyncContextManager):
         await asyncio.gather(*operations)
 
     async def save_all(self, docs: list[T], save_references: bool = False):
+        """
+        Saves a list of documents to the database.
+
+        Args:
+            docs (list[T]): The list of document objects to save.
+            save_references (bool): Whether to save referenced documents.
+        """
         await asyncio.gather(*[self.save(i, save_references) for i in docs if i is not None])
 
     async def _delete_cascade(self, doc: T):
+        """
+        Deletes documents that reference the given document.
+
+        Args:
+            doc (T): The document object to delete.
+        """
         doc_cls = type(doc)
         rev_references = references.get_reverse_references(document_cls=doc_cls)
         operations = []
@@ -642,6 +673,13 @@ class Session(typing.AsyncContextManager):
         await asyncio.gather(*operations)
 
     async def delete(self, doc: T, delete_cascade: bool = False):
+        """
+        Deletes a document from the database.
+
+        Args:
+            doc (T): The document object to delete.
+            delete_cascade (bool): Whether to delete referenced documents.
+        """
         operations = []
         if delete_cascade:
             operations.append(self._delete_cascade(doc))
@@ -653,6 +691,13 @@ class Session(typing.AsyncContextManager):
         )
 
     async def delete_all(self, docs: list[T], delete_cascade: bool = False):
+        """
+        Deletes a list of documents from the database.
+
+        Args:
+            docs (list[T]): The list of document objects to delete.
+            delete_cascade (bool): Whether to delete referenced documents.
+        """
         await asyncio.gather(*[self.delete(i, delete_cascade) for i in docs if i is not None])
 
 
@@ -670,7 +715,7 @@ class Transaction(typing.AsyncContextManager):
         self._tx_started = False
         self._tx_context = None
 
-        # Get session instance according provider type
+        # Get session instance according a provider type
         if self._is_session_provided:
             if not provider.started:
                 raise EngineError('Session not started')
@@ -1117,7 +1162,7 @@ class FsObject(documents.Document):
         Args:
             fs (FsBucket): The file system bucket from where the file will be downloaded.
             dest (typing.IO): The destination file object to write the downloaded file contents.
-            revision (int): The revision number of the file to download. If None, downloads the latest revision.
+            revision (int): The revision number of the file to download. If None, download the latest revision.
 
         """
         if revision is None:

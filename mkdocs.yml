@@ -55,10 +55,6 @@ nav:
       - Data Types: docs/data_types.md
       - Fields: docs/fields.md
       - References: docs/references.md
-      - Engine: docs/engine.md
-      - Session: docs/session.md
-      - Transaction: docs/transaction.md
+      - Database: docs/database.md
       - Objects: docs/objects.md
       - Files: docs/files.md
-      - Migrations: docs/migrations.md
-      - Seeding: docs/seeding.md
