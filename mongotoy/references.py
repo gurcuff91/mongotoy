@@ -6,76 +6,6 @@ if typing.TYPE_CHECKING:
     from mongotoy import documents, fields
 
 
-# noinspection SpellCheckingInspection
-def get_embedded_document_cls(doc_type: typing.Type | str) -> typing.Type['documents.EmbeddedDocument']:
-    """
-    Get the embedded document class based on its type or name.
-
-    Args:
-        doc_type (Type | str): The type or name of the embedded document.
-
-    Returns:
-        Type['documents.EmbeddedDocument']: The embedded document class.
-
-    Raises:
-        TypeError: If the provided type is not a subclass of mongotoy.EmbeddedDocument.
-    """
-    from mongotoy import documents
-
-    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
-
-    if not issubclass(doc_cls, documents.EmbeddedDocument):
-        raise TypeError(f'Type {doc_cls} is not a mongotoy.EmbeddedDocument subclass')
-
-    return doc_cls
-
-
-# noinspection SpellCheckingInspection
-def get_document_cls(doc_type: typing.Type | str) -> typing.Type['documents.Document']:
-    """
-    Get the document class based on its type or name.
-
-    Args:
-        doc_type (Type | str): The type or name of the document.
-
-    Returns:
-        Type['documents.Document']: The document class.
-
-    Raises:
-        TypeError: If the provided type is not a subclass of mongotoy.Document.
-    """
-    from mongotoy import documents
-
-    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
-
-    if not issubclass(doc_cls, documents.Document):
-        raise TypeError(f'Type {doc_cls} is not a mongotoy.Document subclass')
-
-    return doc_cls
-
-
-def get_field(field_name: str, document_cls: typing.Type['documents.BaseDocument']) -> 'fields.Field':
-    """
-    Get the field from a document class based on the field's name.
-
-    Args:
-        field_name (str): The name of the field.
-        document_cls (Type['documents.BaseDocument']): The document class containing the field.
-
-    Returns:
-        'fields.Field': The field object.
-
-    Raises:
-        TypeError: If the field does not exist in the document class.
-    """
-    field = document_cls.__fields__.get(field_name)
-
-    if not field:
-        raise TypeError(f'Field `{document_cls.__name__}.{field}` does not exist')
-
-    return field
-
-
 class Reference:
     """
     Represents a reference to another document.
@@ -114,7 +44,8 @@ class Reference:
         Raises:
             TypeError: If the referenced document is not a subclass of mongotoy.Document.
         """
-        return get_document_cls(self._document_cls)
+        from mongotoy import documents
+        return documents.get_document_cls(self._document_cls)
 
     @property
     def ref_field(self) -> 'fields.Field':
@@ -127,7 +58,8 @@ class Reference:
         Raises:
             TypeError: If the referenced field does not exist.
         """
-        return get_field(self._ref_field, self.document_cls)
+        from mongotoy import documents
+        return documents.get_document_field(self.document_cls, field_name=self._ref_field)
 
     @property
     def key_name(self) -> str:

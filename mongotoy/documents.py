@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import typing
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -262,7 +263,7 @@ class DocumentConfig:
         codec_options (bson.CodecOptions): The BSON codec options (default is None).
         read_preference (pymongo.ReadPreference): The read preference for the document (default is None).
         read_concern (ReadConcern): The read concern for the document (default is None).
-        write_concern (pymongo.WriteConcern): The write concern for the document (default is None).
+        write_concern (pymongo.WriteConcern): The written concern for the document (default is None).
         extra_options (dict): Extra options for the document configuration (default is an empty dictionary).
 
     """
@@ -404,3 +405,66 @@ class Document(BaseDocument, metaclass=DocumentMeta):
             son[reference.key_name] = value
 
         return son
+
+
+# noinspection SpellCheckingInspection
+def get_embedded_document_cls(doc_type: typing.Type | str) -> typing.Type[EmbeddedDocument]:
+    """
+    Get the embedded document class based on its type or name.
+
+    Args:
+        doc_type (Type | str): The type or name of the embedded document.
+
+    Returns:
+        Type['documents.EmbeddedDocument']: The embedded document class.
+
+    Raises:
+        TypeError: If the provided type is not a subclass of mongotoy.EmbeddedDocument.
+    """
+    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
+    if not issubclass(doc_cls, EmbeddedDocument):
+        raise TypeError(f'Type {doc_cls} is not a mongotoy.EmbeddedDocument subclass')
+
+    return doc_cls
+
+
+# noinspection SpellCheckingInspection
+def get_document_cls(doc_type: typing.Type | str) -> typing.Type[Document]:
+    """
+    Get the document class based on its type or name.
+
+    Args:
+        doc_type (Type | str): The type or name of the document.
+
+    Returns:
+        Type['documents.Document']: The document class.
+
+    Raises:
+        TypeError: If the provided type is not a subclass of mongotoy.Document.
+    """
+    doc_cls = cache.documents.get_type(doc_type, do_raise=True)
+    if not issubclass(doc_cls, Document):
+        raise TypeError(f'Type {doc_cls} is not a mongotoy.Document subclass')
+
+    return doc_cls
+
+
+def get_document_field(document_cls: typing.Type[BaseDocument], field_name: str) -> fields.Field:
+    """
+    Get the field from a document class based on the field's name.
+
+    Args:
+        document_cls (Type['documents.BaseDocument']): The document class containing the field.
+        field_name (str): The name of the field.
+
+    Returns:
+        'fields.Field': The field object.
+
+    Raises:
+        TypeError: If the field does not exist in the document class.
+    """
+    field = document_cls.__fields__.get(field_name)
+    if not field:
+        raise TypeError(f'Field `{document_cls.__name__}.{field}` does not exist')
+
+    return field

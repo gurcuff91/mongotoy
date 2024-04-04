@@ -446,7 +446,8 @@ class EmbeddedDocumentMapper(Mapper):
             Type['documents.BaseDocument']: The class of the embedded document.
 
         """
-        return references.get_embedded_document_cls(self._document_cls)
+        from mongotoy import documents
+        return documents.get_embedded_document_cls(self._document_cls)
 
     def validate(self, value) -> typing.Any:
         """
@@ -559,7 +560,8 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             Type['documents.BaseDocument']: The class of the referenced document.
 
         """
-        return references.get_document_cls(self._document_cls)
+        from mongotoy import documents
+        return documents.get_document_cls(self._document_cls)
 
     @property
     def ref_field(self) -> 'fields.Field':
@@ -570,7 +572,8 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             Field: The reference field.
 
         """
-        return references.get_field(self._options.ref_field, document_cls=self.document_cls)
+        from mongotoy import documents
+        return documents.get_document_field(self.document_cls, field_name=self._options.ref_field)
 
     def dump_bson(self, value, **options) -> typing.Any:
         """
