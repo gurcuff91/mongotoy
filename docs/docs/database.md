@@ -85,12 +85,6 @@ To open a new database session, use the `engine.session()` function. The `Sessio
 enabling you to use it within a context; this ensures the proper _starting/ending_ of the session. 
 See [session](#session)
 
-### Open transaction
-
-To open a new database transaction, use the `engine.transaction()` function. The `Transaction` object supports 
-context handling, enabling you to use it within a context; this ensures the proper _starting/commit/abort_ of the 
-transaction. See [transaction](#transaction)
-
 ### Execute migration
 
 Migrations in `Mongotoy` cover a range of tasks essential for seamlessly transitioning your data structures into
@@ -194,7 +188,7 @@ a session without context management, requiring explicit invocation of methods f
 ### Open transaction
 
 To open a new database transaction, use the `session.transaction()` function. The `Transaction` object supports 
-context handling, enabling you to use it within a context; this ensures the proper _starting/commit/abort_ of the 
+context handling, enabling you to use it within a context; this ensures the proper _commit/abort_ of the 
 transaction. See [transaction](#transaction)
 
 ### Objects
@@ -277,56 +271,31 @@ documents, ensuring comprehensive data cleanup and management.
 
 ## Transaction
 
-The `Transaction` class within Mongotoy encapsulates MongoDB transactions, offering a robust mechanism to maintain
-data consistency by executing operations atomically. It accommodates both `Session` and `Engine` instances to 
-initiate transactions and facilitates operations such as starting, committing, and aborting transactions, it ensures
-smooth transaction handling within asynchronous contexts, enhancing the reliability of database interactions.
-
-The `Transaction` class features properties and methods tailored to manage MongoDB transactions efficiently. 
-Its properties include:
-
-- **session**: Retrieves the associated MongoDB session for the transaction, enabling seamless interaction with
-the database.
-
-- **started**: Indicates whether the transaction has been initiated, facilitating status monitoring during 
-transaction execution.
-
-### Lifecycle
-
-The `Transaction` class is crucial for MongoDB transaction management, offering methods like `start()`, `commit(`), 
-and `abort()` for handling transactions efficiently. It also provides a context manager interface for automatic
-lifecycle management. Sessions must be instantiated using `engine.transaction()` or` session.transaction()` functions.
+The `Transaction` class encapsulates MongoDB transactions, ensuring the atomicity of operations within a session 
+context. It is initialized with a session object, providing access to the associated MongoDB session via the `session` 
+property. Upon initialization, the class starts the transaction using the provided session. The `commit()` method is 
+responsible for committing changes made during the transaction, while `abort()` discards changes and closes the 
+transaction. These methods handle exceptions to ensure proper transaction management. Additionally, the class supports
+context management.
 
 ````python
+# Open db session
 async with engine.session() as session:
     
-    # Start transaction from session
+    # Handle transaction in context
     async with session.transaction():
         # Exec session operations inside transaction here ...
 
-
-# Open transaction from engine
-async with engine.transaction() as tx:
-    
-    # Get transaction related session
-    session = tx.session    
-    # Exec session operations inside transaction here ...
-
-
-# Handle transaction manually
-tx = engine.transaction()
-await tx.start()
-try:
-    session = tx.session
-    # Exec session operations here ...
-except:
-    await tx.abort()
-else:
-    await tx.commit()
+    # Handle transaction manually
+    tx = session.transaction()
+    try:
+        # Exec transaction operations here ...
+    except:
+        await tx.abort()
+    else:
+        await tx.commit()
 ````
 
-These examples demonstrate various ways to handle transactions with Mongotoy's Engine and Session classes. 
-The first approach initiates a transaction within a session context, ensuring automatic management. The second approach
-directly opens a transaction from the Engine, allowing operation execution within it. Lastly, the third approach 
-manually manages transaction lifecycle, providing flexibility but requiring explicit control over commit or 
-abort actions.
+This example showcases transaction management within a database session. Transactions can be handled either 
+automatically within a context, ensuring _commit_ or _abort_ in case of errors, or manually, allowing for customized 
+error handling.
