@@ -264,7 +264,7 @@ class FieldProxy:
             str: The alias of the field.
         """
         if self._parent:
-            return f'{self._parent._alias}.{self.field.alias}'
+            return f'{self._parent._alias}.{self._field.alias}'
         return self._field.alias
 
     def __str__(self):
@@ -347,6 +347,24 @@ class FieldProxy:
             Query: Query object representing less-than-or-equal-to comparison.
         """
         return expressions.Query.Lte(self._alias, other)
+
+    def __pos__(self):
+        """
+        Represents ascending sort expression of the field.
+
+        Returns:
+            Sort: Sort object representing ascending sort expression.
+        """
+        return expressions.Sort.Asc(self)
+
+    def __neg__(self):
+        """
+        Represents descending sort expression of the field.
+
+        Returns:
+            Sort: Sort object representing descending sort expression.
+        """
+        return expressions.Sort.Desc(self)
 
     def __getattr__(self, item):
         """

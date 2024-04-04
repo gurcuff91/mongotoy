@@ -189,8 +189,16 @@ class EngineError(Exception):
     """
     Error raised for engine-related issues.
 
-    This exception is raised when there are errors related to engine operations, such as database connections
-    or queries.
+    This exception is raised when there are errors related to engine operations
+
+    """
+
+
+class SessionError(Exception):
+    """
+    Error raised for session-related issues.
+
+    This exception is raised when there are errors related to session operations
 
     """
 

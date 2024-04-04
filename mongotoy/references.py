@@ -1,6 +1,6 @@
 import typing
+
 from mongotoy import cache
-from mongotoy.expressions import Join
 
 if typing.TYPE_CHECKING:
     from mongotoy import documents, fields
@@ -166,37 +166,35 @@ def build_dereference_pipeline(references: list[Reference], deep: int = 0) -> li
     if deep == 0:
         return pipeline
 
-    for reference in references:
-        match_exp = Join.Eq(f"${reference.ref_field.alias}", '$$fk')
-        if reference.is_many:
-            match_exp = Join.In(f"${reference.ref_field.alias}", '$$fk')
-
+    for ref in references:
         pipeline.append(
             {
                 "$lookup": {
-                    'from': reference.document_cls.__collection_name__,
-                    'let': {"fk": f"${reference.key_name}"},
+                    'from': ref.document_cls.__collection_name__,
+                    'let': {"fk": f"${ref.key_name}"},
                     'pipeline': [
                         {
                             "$match": {
-                                "$expr": match_exp
+                                "$expr": {
+                                    '$in' if ref.is_many else '$eq': [f"${ref.ref_field.alias}", '$$fk']
+                                }
                             }
                         },
                         *build_dereference_pipeline(
-                            reference.document_cls.__references__.values(),
+                            ref.document_cls.__references__.values(),
                             deep=deep - 1
                         ),
-                        *([{'$limit': 1}] if not reference.is_many else [])
+                        *([] if ref.is_many else [{'$limit': 1}])
                     ],
-                    'as': reference._name
+                    'as': ref._name
                 }
             }
         )
-        if not reference.is_many:
+        if not ref.is_many:
             pipeline.append(
                 {
                     "$unwind": {
-                        "path": f"${reference._name}",
+                        "path": f"${ref._name}",
                         "preserveNullAndEmptyArrays": True
                     }
                 }

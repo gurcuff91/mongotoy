@@ -242,78 +242,6 @@ class EmbeddedDocument(BaseDocument):
     """
 
 
-class DocumentMeta(BaseDocumentMeta):
-    """
-    Metaclass for document class.
-    """
-
-    # noinspection PyUnresolvedReferences
-    def __new__(mcls, name, bases, namespace, **kwargs):
-        """
-        Creates a new instance of the document class.
-
-        Args:
-            name (str): The name of the class.
-            bases (tuple): The base classes of the class.
-            namespace (dict): The namespace of the class.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            type: The new class instance.
-
-        Raises:
-            DocumentError: If an error occurs during class creation.
-
-        """
-        _cls = super().__new__(mcls, name, bases, namespace)
-
-        _id_field = None
-        _references = OrderedDict()
-        for field in _cls.__fields__.values():
-            # Check id field
-            # noinspection PyProtectedMember
-            if field._options.id_field:
-                _id_field = field
-
-            # Unwrap ManyMapper
-            _mapper = field.mapper
-            _is_many = False
-            if isinstance(_mapper, mappers.SequenceMapper):
-                _mapper = _mapper.unwrap()
-                _is_many = True
-
-            # Add references
-            if isinstance(_mapper, mappers.ReferencedDocumentMapper):
-                # noinspection PyProtectedMember,PyUnresolvedReferences
-                _references[field.name] = references.Reference(
-                    document_cls=_mapper._document_cls,
-                    ref_field=_mapper._options.ref_field,
-                    key_name=_mapper._options.key_name or f'{field.alias}_{_mapper._options.ref_field}',
-                    is_many=_is_many,
-                    name=field.alias
-                )
-
-        if not _id_field:
-            _options = fields.FieldOptions(
-                id_field=True,
-                default_factory=bson.ObjectId
-            )
-            _id_field = fields.Field(
-                mapper=mappers.ObjectIdMapper(options=_options),
-                options=_options
-            )
-            _id_field.__set_name__(_cls, 'id')
-
-        # Set class props
-        _cls.__fields__['id'] = _id_field
-        _cls.__references__ = _references
-        _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
-        _cls.id = _id_field
-        _cls.document_config = namespace.get('document_config', DocumentConfig())
-
-        return _cls
-
-
 @dataclasses.dataclass
 class DocumentConfig:
     """
@@ -352,6 +280,78 @@ class DocumentConfig:
     read_concern: ReadConcern = dataclasses.field(default=None)
     write_concern: pymongo.WriteConcern = dataclasses.field(default=None)
     extra_options: dict = dataclasses.field(default_factory=lambda: dict())
+
+
+class DocumentMeta(BaseDocumentMeta):
+    """
+    Metaclass for document class.
+    """
+
+    # noinspection PyUnresolvedReferences
+    def __new__(mcls, name, bases, namespace, **kwargs):
+        """
+        Creates a new instance of the document class.
+
+        Args:
+            name (str): The name of the class.
+            bases (tuple): The base classes of the class.
+            namespace (dict): The namespace of the class.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            type: The new class instance.
+
+        Raises:
+            DocumentError: If an error occurs during class creation.
+
+        """
+        _cls = super().__new__(mcls, name, bases, namespace)
+
+        _id_field = None
+        _references = OrderedDict()
+        for field in _cls.__fields__.values():
+            # Check id field
+            # noinspection PyProtectedMember
+            if field._options.id_field:
+                _id_field = field
+
+            # Unwrap SequenceMapper
+            _mapper = field.mapper
+            _is_many = False
+            if isinstance(_mapper, mappers.SequenceMapper):
+                _mapper = _mapper.unwrap()
+                _is_many = True
+
+            # Add references
+            if isinstance(_mapper, mappers.ReferencedDocumentMapper):
+                # noinspection PyProtectedMember,PyUnresolvedReferences
+                _references[field.name] = references.Reference(
+                    document_cls=_mapper._document_cls,
+                    ref_field=_mapper._options.ref_field,
+                    key_name=_mapper._options.key_name or f'{field.alias}_{_mapper._options.ref_field}',
+                    is_many=_is_many,
+                    name=field.alias
+                )
+
+        if not _id_field:
+            _options = fields.FieldOptions(
+                id_field=True,
+                default_factory=bson.ObjectId
+            )
+            _id_field = fields.Field(
+                mapper=mappers.ObjectIdMapper(options=_options),
+                options=_options
+            )
+            _id_field.__set_name__(_cls, 'id')
+
+        # Set class props
+        _cls.__fields__['id'] = _id_field
+        _cls.__references__ = _references
+        _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
+        _cls.id = _id_field
+        _cls.document_config = namespace.get('document_config', DocumentConfig())
+
+        return _cls
 
 
 class Document(BaseDocument, metaclass=DocumentMeta):

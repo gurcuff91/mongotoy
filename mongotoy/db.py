@@ -14,7 +14,7 @@ from motor.motor_gridfs import AgnosticGridFSBucket
 from pymongo.read_concern import ReadConcern
 
 from mongotoy import documents, expressions, references, fields, types
-from mongotoy.errors import EngineError, NoResultsError, ManyResultsError
+from mongotoy.errors import EngineError, NoResultsError, ManyResultsError, SessionError
 
 __all__ = (
     'Engine',
@@ -132,15 +132,6 @@ class Engine:
             Session: A new MongoDB session associated with the engine.
         """
         return Session(engine=self)
-
-    def transaction(self) -> 'Transaction':
-        """
-        Creates a new MongoDB transaction.
-
-        Returns:
-            Transaction: A new MongoDB transaction associated with the engine
-        """
-        return Transaction(provider=self)
 
     def collection(self, document_cls_or_name: typing.Type[T] | str) -> AgnosticCollection:
         """
@@ -497,7 +488,7 @@ class Session(typing.AsyncContextManager):
             EngineError: If the session is not started.
         """
         if not self.started:
-            raise EngineError('Session not started')
+            raise SessionError('Session not started')
         return self._driver_session
 
     async def start(self):
@@ -507,9 +498,8 @@ class Session(typing.AsyncContextManager):
         Raises:
             EngineError: If the session is already started.
         """
-        if self.started:
-            raise EngineError('Session already started')
-        self._driver_session = await self.engine.client.start_session()
+        if not self._driver_session:
+            self._driver_session = await self.engine.client.start_session()
 
     async def end(self):
         """
@@ -518,10 +508,9 @@ class Session(typing.AsyncContextManager):
         Raises:
             EngineError: If the session is not started.
         """
-        if not self.started:
-            raise EngineError('Session not started')
-        await self.driver_session.end_session()
-        self._driver_session = None
+        if self.driver_session:
+            await self.driver_session.end_session()
+            self._driver_session = None
 
     async def __aenter__(self) -> 'Session':
         """
@@ -543,7 +532,7 @@ class Session(typing.AsyncContextManager):
         Returns:
             Transaction: A new MongoDB transaction associated with the engine
         """
-        return Transaction(provider=self)
+        return Transaction(session=self)
 
     def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
         """
@@ -702,26 +691,23 @@ class Session(typing.AsyncContextManager):
 
 
 class Transaction(typing.AsyncContextManager):
-    # noinspection GrazieInspection
     """
         Represents a MongoDB transaction for performing atomic operations within a session or engine context.
 
         Args:
-            provider (Session or Engine): The provider of the transaction, either a Session or an Engine.
+            session (Session): The session related with transaction.
     """
 
-    def __init__(self, provider: Session | Engine):
-        self._is_session_provided = isinstance(provider, Session)
-        self._tx_started = False
-        self._tx_context = None
+    # noinspection PyProtectedMember
+    def __init__(self, session: Session):
+        self._session = session
 
-        # Get session instance according a provider type
-        if self._is_session_provided:
-            if not provider.started:
-                raise EngineError('Session not started')
-            self._session = provider
-        else:
-            self._session = provider.session()
+        # Start transaction
+        self._session.driver_session.start_transaction(
+            read_concern=self._session.engine._read_concern,
+            read_preference=self._session.engine._read_preference,
+            write_concern=self._session.engine._write_concern
+        )
 
     @property
     def session(self) -> 'Session':
@@ -733,30 +719,6 @@ class Transaction(typing.AsyncContextManager):
         """
         return self._session
 
-    @property
-    def started(self) -> bool:
-        """
-        Returns a boolean indicating whether the transaction has been started.
-
-        Returns:
-            bool: True if the transaction has been started, False otherwise.
-        """
-        return self._tx_started
-
-    async def start(self):
-        """
-        Starts the MongoDB transaction.
-
-        Raises:
-            EngineError: If the transaction is already started.
-        """
-        if self._tx_started:
-            raise EngineError('Transaction already started')
-        if not self._is_session_provided:
-            await self._session.start()
-        self._tx_context = await self._session.driver_session.start_transaction().__aenter__()
-        self._tx_started = True
-
     async def commit(self):
         """
         Commits changes and closes the MongoDB transaction.
@@ -764,12 +726,7 @@ class Transaction(typing.AsyncContextManager):
         Raises:
             EngineError: If the transaction is not started.
         """
-        if not self._tx_started:
-            raise EngineError('Transaction not started')
         await self._session.driver_session.commit_transaction()
-        if not self._is_session_provided:
-            await self._session.end()
-        self._tx_started = False
 
     async def abort(self):
         """
@@ -778,12 +735,7 @@ class Transaction(typing.AsyncContextManager):
         Raises:
             EngineError: If the transaction is not started.
         """
-        if not self._tx_started:
-            raise EngineError('Transaction not started')
         await self._session.driver_session.abort_transaction()
-        if not self._is_session_provided:
-            await self._session.end()
-        self._tx_started = False
 
     async def __aenter__(self) -> 'Transaction':
         """
@@ -792,20 +744,21 @@ class Transaction(typing.AsyncContextManager):
         Returns:
             Transaction: The transaction instance.
         """
-        await self.start()
         return self
 
-    async def __aexit__(self, __exc_type, __exc_value, __traceback) -> None:
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
         """
         Enables the use of the 'async with' statement. Ends the transaction upon exiting the context.
 
         Args:
-            __exc_type: The type of the exception.
-            __exc_value: The exception value.
-            __traceback: The exception traceback.
+            exc_type: The type of the exception.
+            exc_value: The exception value.
+            traceback: The exception traceback.
         """
-        await self._tx_context.__aexit__(__exc_type, __exc_value, __traceback)
-        self._tx_started = False
+        if exc_value:
+            await self.abort()
+        else:
+            await self.commit()
 
 
 class Objects(typing.Generic[T]):
