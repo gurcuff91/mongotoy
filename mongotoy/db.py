@@ -907,25 +907,18 @@ class Objects(typing.Generic[T]):
         async for data in cursor:
             yield self._document_cls(**data)
 
-    async def fetch(self, dereference_deep: int = 0) -> list[T]:
+    async def fetch(self) -> list[T]:
         """
         Retrieves all documents in the result set.
-
-        Args:
-            dereference_deep (int): The depth of dereference documents.
 
         Returns:
             list[T]: The list of parsed document instances.
         """
-        self._dereference_deep = dereference_deep
         return [doc async for doc in self]
 
-    async def fetch_one(self, dereference_deep: int = 0) -> T:
+    async def fetch_one(self) -> T:
         """
         Retrieves a specific document in the result set.
-
-        Args:
-            dereference_deep (int): The depth of dereference documents.
 
         Returns:
             T: The parsed document instance.
@@ -934,7 +927,7 @@ class Objects(typing.Generic[T]):
             NoResultsError: If no results are found.
             ManyResultsError: If more than one result is found.
         """
-        docs = await self.limit(2).fetch(dereference_deep)
+        docs = await self.limit(2).fetch()
         if not docs:
             raise NoResultsError()
         if len(docs) > 1:
@@ -942,21 +935,20 @@ class Objects(typing.Generic[T]):
         return docs[0]
 
     # noinspection PyShadowingBuiltins
-    async def fetch_by_id(self, value: typing.Any, dereference_deep: int = 0) -> T:
+    async def fetch_by_id(self, value: typing.Any) -> T:
         """
         Retrieves a document by its identifier.
 
         Args:
             value (typing.Any): The identifier value.
-            dereference_deep (int): The depth of dereference documents.
 
         Returns:
             T: The parsed document instance.
         """
-        id_mapper = self._document_cls.__fields__['id'].mapper
+        # noinspection PyProtectedMember
         return await self.filter(
-            Query.Eq('_id', id_mapper.validate(value))
-        ).fetch_one(dereference_deep)
+            self._document_cls.id == self._document_cls.id._field.mapper.validate(value)
+        ).fetch_one()
 
     async def count(self) -> int:
         """
