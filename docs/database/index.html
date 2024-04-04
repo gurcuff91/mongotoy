@@ -575,15 +575,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#open-transaction" class="md-nav__link">
-    <span class="md-ellipsis">
-      Open transaction
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#execute-migration" class="md-nav__link">
     <span class="md-ellipsis">
       Execute migration
@@ -626,7 +617,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#open-transaction_1" class="md-nav__link">
+  <a href="#open-transaction" class="md-nav__link">
     <span class="md-ellipsis">
       Open transaction
     </span>
@@ -681,21 +672,6 @@
       Transaction
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Transaction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#lifecycle_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Lifecycle
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -810,15 +786,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#open-transaction" class="md-nav__link">
-    <span class="md-ellipsis">
-      Open transaction
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#execute-migration" class="md-nav__link">
     <span class="md-ellipsis">
       Execute migration
@@ -861,7 +828,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#open-transaction_1" class="md-nav__link">
+  <a href="#open-transaction" class="md-nav__link">
     <span class="md-ellipsis">
       Open transaction
     </span>
@@ -916,21 +883,6 @@
       Transaction
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Transaction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#lifecycle_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Lifecycle
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1050,10 +1002,6 @@ Failure to do so will result in a <code>mongotoy.errors.EngineError</code>.</p>
 <p>To open a new database session, use the <code>engine.session()</code> function. The <code>Session</code> object supports context handling,
 enabling you to use it within a context; this ensures the proper <em>starting/ending</em> of the session. 
 See <a href="#session">session</a></p>
-<h3 id="open-transaction">Open transaction</h3>
-<p>To open a new database transaction, use the <code>engine.transaction()</code> function. The <code>Transaction</code> object supports 
-context handling, enabling you to use it within a context; this ensures the proper <em>starting/commit/abort</em> of the 
-transaction. See <a href="#transaction">transaction</a></p>
 <h3 id="execute-migration">Execute migration</h3>
 <p>Migrations in <code>Mongotoy</code> cover a range of tasks essential for seamlessly transitioning your data structures into
 MongoDB. These tasks include migrating <em>indexes</em>, creating <em>capped collections</em>, and defining <em>time series</em> collections.
@@ -1172,9 +1120,9 @@ Sessions must always be instantiated from an <code>Engine</code> instance using 
 <p>These examples showcase two methods of opening a database session with Mongotoy's Engine class. The first one uses 
 a context manager, ensuring proper session handling and cleanup after execution. The second method directly initializes
 a session without context management, requiring explicit invocation of methods for session initiation and termination.</p>
-<h3 id="open-transaction_1">Open transaction</h3>
+<h3 id="open-transaction">Open transaction</h3>
 <p>To open a new database transaction, use the <code>session.transaction()</code> function. The <code>Transaction</code> object supports 
-context handling, enabling you to use it within a context; this ensures the proper <em>starting/commit/abort</em> of the 
+context handling, enabling you to use it within a context; this ensures the proper <em>commit/abort</em> of the 
 transaction. See <a href="#transaction">transaction</a></p>
 <h3 id="objects">Objects</h3>
 <p>The <code>objects</code> method in the <code>Session</code> class facilitates the creation of an <code>Objects</code> instance, which allows for 
@@ -1263,26 +1211,12 @@ and cleanliness effectively.</p>
 setting <code>delete_cascade=True</code>. This feature allows for the removal of related references along with the specified 
 documents, ensuring comprehensive data cleanup and management.</p>
 <h2 id="transaction">Transaction</h2>
-<p>The <code>Transaction</code> class within Mongotoy encapsulates MongoDB transactions, offering a robust mechanism to maintain
-data consistency by executing operations atomically. It accommodates both <code>Session</code> and <code>Engine</code> instances to 
-initiate transactions and facilitates operations such as starting, committing, and aborting transactions, it ensures
-smooth transaction handling within asynchronous contexts, enhancing the reliability of database interactions.</p>
-<p>The <code>Transaction</code> class features properties and methods tailored to manage MongoDB transactions efficiently. 
-Its properties include:</p>
-<ul>
-<li>
-<p><strong>session</strong>: Retrieves the associated MongoDB session for the transaction, enabling seamless interaction with
-the database.</p>
-</li>
-<li>
-<p><strong>started</strong>: Indicates whether the transaction has been initiated, facilitating status monitoring during 
-transaction execution.</p>
-</li>
-</ul>
-<h3 id="lifecycle_1">Lifecycle</h3>
-<p>The <code>Transaction</code> class is crucial for MongoDB transaction management, offering methods like <code>start()</code>, <code>commit(</code>), 
-and <code>abort()</code> for handling transactions efficiently. It also provides a context manager interface for automatic
-lifecycle management. Sessions must be instantiated using <code>engine.transaction()</code> or<code>session.transaction()</code> functions.</p>
+<p>The <code>Transaction</code> class encapsulates MongoDB transactions, ensuring the atomicity of operations within a session 
+context. It is initialized with a session object, providing access to the associated MongoDB session via the <code>session</code> 
+property. Upon initialization, the class starts the transaction using the provided session. The <code>commit()</code> method is 
+responsible for committing changes made during the transaction, while <code>abort()</code> discards changes and closes the 
+transaction. These methods handle exceptions to ensure proper transaction management. Additionally, the class supports
+context management.</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -1297,47 +1231,25 @@ lifecycle management. Sessions must be instantiated using <code>engine.transacti
 <span class="normal">12</span>
 <span class="normal">13</span>
 <span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
 
-    <span class="c1"># Start transaction from session</span>
+    <span class="c1"># Handle transaction in context</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
         <span class="c1"># Exec session operations inside transaction here ...</span>
 
-
-<span class="c1"># Open transaction from engine</span>
-<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">transaction</span><span class="p">()</span> <span class="k">as</span> <span class="n">tx</span><span class="p">:</span>
-
-    <span class="c1"># Get transaction related session</span>
-    <span class="n">session</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">session</span>    
-    <span class="c1"># Exec session operations inside transaction here ...</span>
-
-
-<span class="c1"># Handle transaction manually</span>
-<span class="n">tx</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">transaction</span><span class="p">()</span>
-<span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">session</span> <span class="o">=</span> <span class="n">tx</span><span class="o">.</span><span class="n">session</span>
-    <span class="c1"># Exec session operations here ...</span>
-<span class="k">except</span><span class="p">:</span>
-    <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">abort</span><span class="p">()</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="c1"># Handle transaction manually</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">transaction</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Exec transaction operations here ...</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">abort</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">tx</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
-<p>These examples demonstrate various ways to handle transactions with Mongotoy's Engine and Session classes. 
-The first approach initiates a transaction within a session context, ensuring automatic management. The second approach
-directly opens a transaction from the Engine, allowing operation execution within it. Lastly, the third approach 
-manually manages transaction lifecycle, providing flexibility but requiring explicit control over commit or 
-abort actions.</p>
+<p>This example showcases transaction management within a database session. Transactions can be handled either 
+automatically within a context, ensuring <em>commit</em> or <em>abort</em> in case of errors, or manually, allowing for customized 
+error handling.</p>
 
 
 
