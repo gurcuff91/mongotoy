@@ -7,7 +7,7 @@
     }
 </style>
 
-## Document
+## Defining documents
 
 Defining documents in Mongotoy is straightforward. Simply inherit from `mongotoy.Document` class and define your class
 attributes similarly to how you would define a [Python dataclass](https://docs.python.org/3/library/dataclasses.html). 
@@ -93,7 +93,7 @@ All of these configurations apply only at the document collection level and do n
 database collections.
 
 
-## Embedded Document
+## Defining embedded documents
 
 An _embedded document_ serves as a container for defining complex object types that are nested within other 
 documents. Unlike _documents_, _embedded documents_ do not represent individual collections in the database. 
