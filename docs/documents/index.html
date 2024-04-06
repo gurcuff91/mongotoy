@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#document" class="md-skip">
+        <a href="#defining-documents" class="md-skip">
           Skip to content
         </a>
       
@@ -463,13 +463,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#document" class="md-nav__link">
+  <a href="#defining-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Document
+      Defining documents
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Document">
+    <nav class="md-nav" aria-label="Defining documents">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -505,9 +505,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#embedded-document" class="md-nav__link">
+  <a href="#defining-embedded-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Embedded Document
+      Defining embedded documents
     </span>
   </a>
   
@@ -722,13 +722,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#document" class="md-nav__link">
+  <a href="#defining-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Document
+      Defining documents
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Document">
+    <nav class="md-nav" aria-label="Defining documents">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -764,9 +764,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#embedded-document" class="md-nav__link">
+  <a href="#defining-embedded-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Embedded Document
+      Defining embedded documents
     </span>
   </a>
   
@@ -843,7 +843,7 @@
     }
 </style>
 
-<h2 id="document">Document</h2>
+<h2 id="defining-documents">Defining documents</h2>
 <p>Defining documents in Mongotoy is straightforward. Simply inherit from <code>mongotoy.Document</code> class and define your class
 attributes similarly to how you would define a <a href="https://docs.python.org/3/library/dataclasses.html">Python dataclass</a>. 
 In this example, each class attribute represents a field in the database, and the class itself corresponds 
@@ -925,7 +925,7 @@ MongoDB collection options.</p>
 </ul>
 <p>All of these configurations apply only at the document collection level and do not affect the rest of the 
 database collections.</p>
-<h2 id="embedded-document">Embedded Document</h2>
+<h2 id="defining-embedded-documents">Defining embedded documents</h2>
 <p>An <em>embedded document</em> serves as a container for defining complex object types that are nested within other 
 documents. Unlike <em>documents</em>, <em>embedded documents</em> do not represent individual collections in the database. 
 Instead, they are used to encapsulate related data fields within a parent document, allowing for more structured and 
