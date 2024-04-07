@@ -2,7 +2,9 @@ import asyncio
 import datetime
 import functools
 import inspect
+import math
 import mimetypes
+import os
 import typing
 
 import bson
@@ -13,7 +15,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket, As
 from motor.motor_gridfs import AgnosticGridFSBucket
 from pymongo.read_concern import ReadConcern
 
-from mongotoy import documents, expressions, references, fields, types
+from mongotoy import documents, expressions, references, fields, types, sync
 from mongotoy.errors import EngineError, NoResultsError, ManyResultsError, SessionError
 
 __all__ = (
@@ -83,18 +85,6 @@ class Engine:
         self._db_client = None
         self._migration_lock = asyncio.Lock()
 
-    async def connect(self, *conn, ping: bool = False):
-        """
-        Connects to the MongoDB server.
-
-        Args:
-            *conn: Connection arguments for AsyncIOMotorClient.
-            ping (bool): Whether to ping the server after connecting.
-        """
-        self._db_client = AsyncIOMotorClient(*conn)
-        if ping:
-            await self._db_client.admin.command({'ping': 1})
-
     @property
     def client(self) -> AgnosticClient:
         """
@@ -122,60 +112,6 @@ class Engine:
             read_preference=self._read_preference,
             read_concern=self._read_concern,
             write_concern=self._write_concern
-        )
-
-    def session(self) -> 'Session':
-        """
-        Creates a new MongoDB session.
-
-        Returns:
-            Session: A new MongoDB session associated with the engine.
-        """
-        return Session(engine=self)
-
-    def collection(self, document_cls_or_name: typing.Type[T] | str) -> AgnosticCollection:
-        """
-        Retrieves the MongoDB collection.
-
-        Args:
-            document_cls_or_name (typing.Type[T] | str): The document class or collection name.
-
-        Returns:
-            AgnosticCollection: The MongoDB collection.
-        """
-        if not isinstance(document_cls_or_name, str):
-            return self._get_document_collection(document_cls_or_name)
-
-        # noinspection PyTypeChecker
-        return self.database[document_cls_or_name].with_options(
-            codec_options=self._codec_options,
-            read_preference=self._read_preference,
-            read_concern=self._read_concern,
-            write_concern=self._write_concern
-        )
-
-    # noinspection SpellCheckingInspection
-    def gridfs(
-        self,
-        bucket_name: str = 'fs',
-        chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
-    ) -> AgnosticGridFSBucket:
-        """
-        Retrieves the GridFS bucket.
-
-        Args:
-            bucket_name (str): The name of the GridFS bucket.
-            chunk_size_bytes (int): The chunk size in bytes.
-
-        Returns:
-            AgnosticGridFSBucket: The GridFS bucket.
-        """
-        return AsyncIOMotorGridFSBucket(
-            database=self.database,
-            bucket_name=bucket_name,
-            chunk_size_bytes=chunk_size_bytes,
-            write_concern=self.database.write_concern,
-            read_preference=self.database.read_preference
         )
 
     def _get_document_indexes(
@@ -367,16 +303,30 @@ class Engine:
 
         # Skip if seeding already applied
         if skip_exist:
+            # noinspection PyProtectedMember
             if await session.objects(Seeding).filter(
                 Seeding.function == func_path
-            ).count():
+            )._count():
                 do_seeding = False
 
         if do_seeding:
             await func(session)
-            await session.save(Seeding(function=func_path))
+            # noinspection PyProtectedMember
+            await session._save(Seeding(function=func_path))
 
-    async def migrate(
+    async def _connect(self, *conn, ping: bool = False):
+        """
+        Connects to the MongoDB server.
+
+        Args:
+            *conn: Connection arguments for AsyncIOMotorClient.
+            ping (bool): Whether to ping the server after connecting.
+        """
+        self._db_client = AsyncIOMotorClient(*conn)
+        if ping:
+            await self._db_client.admin.command({'ping': 1})
+
+    async def _migrate(
         self,
         document_cls: typing.Type[T],
         session: 'Session' = None
@@ -391,7 +341,7 @@ class Engine:
         driver_session = session.driver_session if session else None
         await self._exec_migration(document_cls, driver_session=driver_session)
 
-    async def migrate_all(
+    async def _migrate_all(
         self,
         documents_cls: list[typing.Type[T]],
         session: 'Session' = None
@@ -413,7 +363,7 @@ class Engine:
             ) for doc_cls in documents_cls if doc_cls.__collection_name__ not in collections
         ])
 
-    async def seeding(
+    async def _seeding(
         self,
         func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
         session: 'Session' = None
@@ -427,7 +377,7 @@ class Engine:
         """
         await self._exec_seeding(func, session=session)
 
-    async def seeding_all(
+    async def _seeding_all(
         self,
         funcs: list[typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]],
         session: 'Session' = None
@@ -439,7 +389,8 @@ class Engine:
             funcs (list[Callable[['Session'], Coroutine[Any, Any, None]]]): List of seeding functions.
             session (Session, optional): The session object.
         """
-        seeds = await session.objects(Seeding).fetch()
+        # noinspection PyProtectedMember
+        seeds = await session.objects(Seeding)._fetch()
         seeds = [s.function for s in seeds]
         # noinspection PyUnresolvedReferences
         await asyncio.gather(*[
@@ -450,8 +401,102 @@ class Engine:
             ) for func in funcs if f'{func.__module__}.{func.__name__}' not in seeds
         ])
 
+    def session(self) -> 'Session':
+        """
+        Creates a new MongoDB session.
 
-class Session(typing.AsyncContextManager):
+        Returns:
+            Session: A new MongoDB session associated with the engine.
+        """
+        return Session(engine=self)
+
+    def collection(self, document_cls_or_name: typing.Type[T] | str) -> AgnosticCollection:
+        """
+        Retrieves the MongoDB collection.
+
+        Args:
+            document_cls_or_name (typing.Type[T] | str): The document class or collection name.
+
+        Returns:
+            AgnosticCollection: The MongoDB collection.
+        """
+        if not isinstance(document_cls_or_name, str):
+            return self._get_document_collection(document_cls_or_name)
+
+        # noinspection PyTypeChecker
+        return self.database[document_cls_or_name].with_options(
+            codec_options=self._codec_options,
+            read_preference=self._read_preference,
+            read_concern=self._read_concern,
+            write_concern=self._write_concern
+        )
+
+    # noinspection SpellCheckingInspection
+    def gridfs(
+        self,
+        bucket_name: str = 'fs',
+        chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE
+    ) -> AgnosticGridFSBucket:
+        """
+        Retrieves the GridFS bucket.
+
+        Args:
+            bucket_name (str): The name of the GridFS bucket.
+            chunk_size_bytes (int): The chunk size in bytes.
+
+        Returns:
+            AgnosticGridFSBucket: The GridFS bucket.
+        """
+        return AsyncIOMotorGridFSBucket(
+            database=self.database,
+            bucket_name=bucket_name,
+            chunk_size_bytes=chunk_size_bytes,
+            write_concern=self.database.write_concern,
+            read_preference=self.database.read_preference
+        )
+
+    @sync.proxy
+    def connect(
+        self,
+        *conn,
+        ping: bool = False
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._connect(*conn, ping)
+
+    @sync.proxy
+    async def migrate(
+        self,
+        document_cls: typing.Type[T],
+        session: 'Session' = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._migrate(document_cls, session)
+
+    @sync.proxy
+    def migrate_all(
+        self,
+        documents_cls: list[typing.Type[T]],
+        session: 'Session' = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._migrate_all(documents_cls, session)
+
+    @sync.proxy
+    def seeding(
+        self,
+        func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
+        session: 'Session' = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._seeding(func, session)
+
+    @sync.proxy
+    def seeding_all(
+        self,
+        funcs: list[typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]],
+        session: 'Session' = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._seeding_all(funcs, session)
+
+
+class Session(typing.AsyncContextManager, typing.ContextManager):
     """
     Represents a MongoDB session for performing database operations within a transaction-like context.
 
@@ -491,7 +536,26 @@ class Session(typing.AsyncContextManager):
             raise SessionError('Session not started')
         return self._driver_session
 
-    async def start(self):
+    async def __aenter__(self) -> 'Session':
+        """
+        Enables the use of the 'async with' statement.
+        """
+        await self._start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """
+        Enables the use of the 'async with' statement. Ends the session upon exiting the context.
+        """
+        await self._end()
+
+    def __enter__(self) -> 'Session':
+        return sync.run_sync(self.__aenter__)()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sync.run_sync(self.__aexit__)(exc_type, exc_value, traceback)
+
+    async def _start(self):
         """
         Starts the MongoDB session.
 
@@ -501,7 +565,7 @@ class Session(typing.AsyncContextManager):
         if not self._driver_session:
             self._driver_session = await self.engine.client.start_session()
 
-    async def end(self):
+    async def _end(self):
         """
         Ends the MongoDB session.
 
@@ -511,53 +575,6 @@ class Session(typing.AsyncContextManager):
         if self.driver_session:
             await self.driver_session.end_session()
             self._driver_session = None
-
-    async def __aenter__(self) -> 'Session':
-        """
-        Enables the use of the 'async with' statement.
-        """
-        await self.start()
-        return self
-
-    async def __aexit__(self, __exc_type, __exc_value, __traceback) -> None:
-        """
-        Enables the use of the 'async with' statement. Ends the session upon exiting the context.
-        """
-        await self.end()
-
-    def transaction(self) -> 'Transaction':
-        """
-        Creates a new MongoDB transaction.
-
-        Returns:
-            Transaction: A new MongoDB transaction associated with the engine
-        """
-        return Transaction(session=self)
-
-    def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
-        """
-        Returns an object manager for the specified document class.
-
-        Args:
-            document_cls (typing.Type[T]): The document class.
-            dereference_deep (int): Depth of dereferencing.
-
-        Returns:
-            Objects[T]: An object manager.
-        """
-        return Objects(document_cls, session=self, dereference_deep=dereference_deep)
-
-    def fs(self, chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE) -> 'FsBucket':
-        """
-        Returns a GridFS bucket manager.
-
-        Args:
-            chunk_size_bytes (int): The chunk size in bytes.
-
-        Returns:
-            FsBucket: A GridFS bucket manager.
-        """
-        return FsBucket(self, chunk_size_bytes=chunk_size_bytes)
 
     async def _save_references(self, doc: T):
         """
@@ -574,12 +591,12 @@ class Session(typing.AsyncContextManager):
             if not reference.is_many:
                 obj = [obj]
             operations.append(
-                self.save_all(obj, save_references=True)
+                self._save_all(obj, save_references=True)
             )
 
         await asyncio.gather(*operations)
 
-    async def save(self, doc: T, save_references: bool = False):
+    async def _save(self, doc: T, save_references: bool = False):
         """
         Saves a document to the database.
 
@@ -592,17 +609,15 @@ class Session(typing.AsyncContextManager):
             operations.append(self._save_references(doc))
 
         son = doc.dump_bson()
-        operations.append(
-            self.engine.collection(doc.__collection_name__).update_one(
-                filter=Query.Eq('_id', son.pop('_id')),
-                update={'$set': son},
-                upsert=True,
-                session=self.driver_session
-            )
-        )
         await asyncio.gather(*operations)
+        await self.engine.collection(doc.__collection_name__).update_one(
+            filter=Query.Eq('_id', son.pop('_id')),
+            update={'$set': son},
+            upsert=True,
+            session=self.driver_session
+        )
 
-    async def save_all(self, docs: list[T], save_references: bool = False):
+    async def _save_all(self, docs: list[T], save_references: bool = False):
         """
         Saves a list of documents to the database.
 
@@ -610,7 +625,7 @@ class Session(typing.AsyncContextManager):
             docs (list[T]): The list of document objects to save.
             save_references (bool): Whether to save referenced documents.
         """
-        await asyncio.gather(*[self.save(i, save_references) for i in docs if i is not None])
+        await asyncio.gather(*[self._save(i, save_references) for i in docs if i is not None])
 
     async def _delete_cascade(self, doc: T):
         """
@@ -653,15 +668,15 @@ class Session(typing.AsyncContextManager):
                             break
                         setattr(ref_doc, field_name, value)
                         # Apply update
-                        operations.append(self.save(ref_doc))
+                        operations.append(self._save(ref_doc))
 
                 # Apply delete
                 if do_delete:
-                    operations.append(self.delete(ref_doc, delete_cascade=True))
+                    operations.append(self._delete(ref_doc, delete_cascade=True))
 
         await asyncio.gather(*operations)
 
-    async def delete(self, doc: T, delete_cascade: bool = False):
+    async def _delete(self, doc: T, delete_cascade: bool = False):
         """
         Deletes a document from the database.
 
@@ -679,7 +694,7 @@ class Session(typing.AsyncContextManager):
             session=self.driver_session
         )
 
-    async def delete_all(self, docs: list[T], delete_cascade: bool = False):
+    async def _delete_all(self, docs: list[T], delete_cascade: bool = False):
         """
         Deletes a list of documents from the database.
 
@@ -687,10 +702,84 @@ class Session(typing.AsyncContextManager):
             docs (list[T]): The list of document objects to delete.
             delete_cascade (bool): Whether to delete referenced documents.
         """
-        await asyncio.gather(*[self.delete(i, delete_cascade) for i in docs if i is not None])
+        await asyncio.gather(*[self._delete(i, delete_cascade) for i in docs if i is not None])
+
+    def transaction(self) -> 'Transaction':
+        """
+        Creates a new MongoDB transaction.
+
+        Returns:
+            Transaction: A new MongoDB transaction associated with the engine
+        """
+        return Transaction(session=self)
+
+    def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
+        """
+        Returns an object manager for the specified document class.
+
+        Args:
+            document_cls (typing.Type[T]): The document class.
+            dereference_deep (int): Depth of dereferencing.
+
+        Returns:
+            Objects[T]: An object manager.
+        """
+        return Objects(document_cls, session=self, dereference_deep=dereference_deep)
+
+    def fs(self, chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE) -> 'FsBucket':
+        """
+        Returns a GridFS bucket manager.
+
+        Args:
+            chunk_size_bytes (int): The chunk size in bytes.
+
+        Returns:
+            FsBucket: A GridFS bucket manager.
+        """
+        return FsBucket(self, chunk_size_bytes=chunk_size_bytes)
+
+    @sync.proxy
+    def start(self) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._start()
+
+    @sync.proxy
+    def end(self) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._end()
+
+    @sync.proxy
+    def save(
+        self,
+        doc: T,
+        save_references: bool = False
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._save(doc, save_references)
+
+    @sync.proxy
+    def save_all(
+        self,
+        docs: list[T],
+        save_references: bool = False
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._save_all(docs, save_references)
+
+    @sync.proxy
+    def delete(
+        self,
+        doc: T,
+        delete_cascade: bool = False
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._delete(doc, delete_cascade)
+
+    @sync.proxy
+    def delete_all(
+        self,
+        docs: list[T],
+        delete_cascade: bool = False
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._delete_all(docs, delete_cascade)
 
 
-class Transaction(typing.AsyncContextManager):
+class Transaction(typing.AsyncContextManager, typing.ContextManager):
     """
         Represents a MongoDB transaction for performing atomic operations within a session or engine context.
 
@@ -719,24 +808,6 @@ class Transaction(typing.AsyncContextManager):
         """
         return self._session
 
-    async def commit(self):
-        """
-        Commits changes and closes the MongoDB transaction.
-
-        Raises:
-            EngineError: If the transaction is not started.
-        """
-        await self._session.driver_session.commit_transaction()
-
-    async def abort(self):
-        """
-        Discards changes and closes the MongoDB transaction.
-
-        Raises:
-            EngineError: If the transaction is not started.
-        """
-        await self._session.driver_session.abort_transaction()
-
     async def __aenter__(self) -> 'Transaction':
         """
         Enables the use of the 'async with' statement.
@@ -756,9 +827,41 @@ class Transaction(typing.AsyncContextManager):
             traceback: The exception traceback.
         """
         if exc_value:
-            await self.abort()
+            await self._abort()
         else:
-            await self.commit()
+            await self._commit()
+
+    def __enter__(self) -> 'Transaction':
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        sync.run_sync(self.__aexit__)(exc_type, exc_value, traceback)
+
+    async def _commit(self):
+        """
+        Commits changes and closes the MongoDB transaction.
+
+        Raises:
+            EngineError: If the transaction is not started.
+        """
+        await self._session.driver_session.commit_transaction()
+
+    async def _abort(self):
+        """
+        Discards changes and closes the MongoDB transaction.
+
+        Raises:
+            EngineError: If the transaction is not started.
+        """
+        await self._session.driver_session.abort_transaction()
+
+    @sync.proxy
+    def commit(self) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._commit()
+
+    @sync.proxy
+    def abort(self) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._abort()
 
 
 class Objects(typing.Generic[T]):
@@ -783,7 +886,7 @@ class Objects(typing.Generic[T]):
         self._skip = 0
         self._limit = 0
 
-    def __copy_with__(self, **options) -> 'Objects[T]':
+    def __copy__(self, **options) -> 'Objects[T]':
         """
         Creates a shallow copy of the query set with specified options.
 
@@ -805,77 +908,6 @@ class Objects(typing.Generic[T]):
         setattr(objs, '_limit', options.get('_limit', self._limit))
 
         return objs
-
-    async def create(self, **data) -> T:
-        """
-        Creates a new document in the database.
-
-        Args:
-            **data: Keyword arguments representing the document data.
-
-        Returns:
-            T: The newly created document instance.
-        """
-        doc = self._document_cls(**data)
-        await self._session.save(doc, save_references=True)
-        return doc
-
-    def filter(self, *queries: expressions.Query | bool, **filters) -> 'Objects[T]':
-        """
-        Adds filter conditions to the query set.
-
-        Args:
-            *queries (expressions.Query | bool): Variable number of filter expressions.
-            **filters: Keyword arguments representing additional filter conditions.
-
-        Returns:
-            Objects[T]: The updated query set with added filter conditions.
-        """
-        _filter = self._filter
-        for q in queries:
-            _filter = _filter & q
-        if filters:
-            _filter = _filter & expressions.Q(**filters)
-        return self.__copy_with__(_filter=_filter)
-
-    def sort(self, *sorts: expressions.Sort) -> 'Objects[T]':
-        """
-        Adds sort conditions to the query set.
-
-        Args:
-            *sorts (expressions.Sort): Variable number of sort expressions.
-
-        Returns:
-            Objects[T]: The updated query set with added sort conditions.
-        """
-        _sort = self._sort
-        for sort in sorts:
-            _sort = _sort | expressions.Sort(sort)
-        return self.__copy_with__(_sort=_sort)
-
-    def skip(self, skip: int) -> 'Objects[T]':
-        """
-        Sets the number of documents to skip in the result set.
-
-        Args:
-            skip (int): The number of documents to skip.
-
-        Returns:
-            Objects[T]: The updated query set with the skip value set.
-        """
-        return self.__copy_with__(_skip=skip)
-
-    def limit(self, limit: int) -> 'Objects[T]':
-        """
-        Sets the maximum number of documents to return.
-
-        Args:
-            limit (int): The maximum number of documents to return.
-
-        Returns:
-            Objects[T]: The updated query set with the limit value set.
-        """
-        return self.__copy_with__(_limit=limit)
 
     async def __aiter__(self) -> typing.AsyncGenerator[T, None]:
         """
@@ -907,7 +939,26 @@ class Objects(typing.Generic[T]):
         async for data in cursor:
             yield self._document_cls(**data)
 
-    async def fetch(self) -> list[T]:
+    def __iter__(self) -> typing.Generator[T, None, None]:
+        for doc in sync.as_sync_gen(self.__aiter__()):
+            yield doc
+
+    async def _create(self, **data) -> T:
+        """
+        Creates a new document in the database.
+
+        Args:
+            **data: Keyword arguments representing the document data.
+
+        Returns:
+            T: The newly created document instance.
+        """
+        doc = self._document_cls(**data)
+        # noinspection PyProtectedMember
+        await self._session._save(doc, save_references=True)
+        return doc
+
+    async def _fetch(self) -> list[T]:
         """
         Retrieves all documents in the result set.
 
@@ -916,7 +967,7 @@ class Objects(typing.Generic[T]):
         """
         return [doc async for doc in self]
 
-    async def fetch_one(self) -> T:
+    async def _fetch_one(self) -> T:
         """
         Retrieves a specific document in the result set.
 
@@ -927,7 +978,7 @@ class Objects(typing.Generic[T]):
             NoResultsError: If no results are found.
             ManyResultsError: If more than one result is found.
         """
-        docs = await self.limit(2).fetch()
+        docs = await self.limit(2)._fetch()
         if not docs:
             raise NoResultsError()
         if len(docs) > 1:
@@ -935,7 +986,7 @@ class Objects(typing.Generic[T]):
         return docs[0]
 
     # noinspection PyShadowingBuiltins
-    async def fetch_by_id(self, value: typing.Any) -> T:
+    async def _fetch_by_id(self, value: typing.Any) -> T:
         """
         Retrieves a document by its identifier.
 
@@ -948,9 +999,9 @@ class Objects(typing.Generic[T]):
         # noinspection PyProtectedMember
         return await self.filter(
             self._document_cls.id == self._document_cls.id._field.mapper.validate(value)
-        ).fetch_one()
+        )._fetch_one()
 
-    async def count(self) -> int:
+    async def _count(self) -> int:
         """
         Counts the number of documents in the result set.
 
@@ -961,6 +1012,83 @@ class Objects(typing.Generic[T]):
             filter=self._filter,
             session=self._session.driver_session
         )
+
+    def filter(self, *queries: expressions.Query | bool, **filters) -> 'Objects[T]':
+        """
+        Adds filter conditions to the query set.
+
+        Args:
+            *queries (expressions.Query | bool): Variable number of filter expressions.
+            **filters: Keyword arguments representing additional filter conditions.
+
+        Returns:
+            Objects[T]: The updated query set with added filter conditions.
+        """
+        _filter = self._filter
+        for q in queries:
+            _filter = _filter & q
+        if filters:
+            _filter = _filter & expressions.Q(**filters)
+        return self.__copy__(_filter=_filter)
+
+    def sort(self, *sorts: expressions.Sort) -> 'Objects[T]':
+        """
+        Adds sort conditions to the query set.
+
+        Args:
+            *sorts (expressions.Sort): Variable number of sort expressions.
+
+        Returns:
+            Objects[T]: The updated query set with added sort conditions.
+        """
+        _sort = self._sort
+        for sort in sorts:
+            _sort = _sort | expressions.Sort(sort)
+        return self.__copy__(_sort=_sort)
+
+    def skip(self, skip: int) -> 'Objects[T]':
+        """
+        Sets the number of documents to skip in the result set.
+
+        Args:
+            skip (int): The number of documents to skip.
+
+        Returns:
+            Objects[T]: The updated query set with the skip value set.
+        """
+        return self.__copy__(_skip=skip)
+
+    def limit(self, limit: int) -> 'Objects[T]':
+        """
+        Sets the maximum number of documents to return.
+
+        Args:
+            limit (int): The maximum number of documents to return.
+
+        Returns:
+            Objects[T]: The updated query set with the limit value set.
+        """
+        return self.__copy__(_limit=limit)
+
+    @sync.proxy
+    def create(self, **data) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
+        return self._create(**data)
+
+    @sync.proxy
+    def fetch(self) -> typing.Coroutine[typing.Any, typing.Any, list[T]] | list[T]:
+        return self._fetch()
+
+    @sync.proxy
+    def fetch_one(self) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
+        return self._fetch_one()
+
+    @sync.proxy
+    def fetch_by_id(self, value: typing.Any) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
+        return self._fetch_by_id(value)
+
+    @sync.proxy
+    def count(self) -> typing.Coroutine[typing.Any, typing.Any, int] | int:
+        return self._count()
 
 
 # noinspection PyProtectedMember
@@ -989,7 +1117,7 @@ class FsBucket(Objects['FsObject']):
         self._chunk_size_bytes = chunk_size_bytes
 
     # noinspection PyMethodMayBeStatic
-    async def create(
+    async def _create(
         self,
         filename: str,
         src: typing.IO | bytes,
@@ -1029,11 +1157,11 @@ class FsBucket(Objects['FsObject']):
             session=self._session.driver_session
         )
         # Update obj info
-        obj = await self.fetch_by_id(obj.id)
+        obj = await self._fetch_by_id(obj.id)
 
         return obj
 
-    async def exist(self, filename: str) -> bool:
+    async def _exist(self, filename: str) -> bool:
         """
         Checks if a file exists in the file system bucket.
 
@@ -1043,10 +1171,10 @@ class FsBucket(Objects['FsObject']):
         Returns:
             bool: True if the file exists, False otherwise.
         """
-        count = await self.filter(Query.Eq('filename', filename)).count()
+        count = await self.filter(Query.Eq('filename', filename))._count()
         return count > 0
 
-    async def revisions(self, filename: str) -> list['FsObject']:
+    async def _revisions(self, filename: str) -> list['FsObject']:
         """
         Retrieves all revisions of a file from the file system bucket.
 
@@ -1056,7 +1184,31 @@ class FsBucket(Objects['FsObject']):
         Returns:
             list[FsObject]: A list of file objects representing revisions.
         """
-        return await self.filter(Query.Eq('filename', filename)).fetch()
+        return await self.filter(Query.Eq('filename', filename))._fetch()
+
+    @sync.proxy
+    def create(
+        self,
+        filename: str,
+        src: typing.IO | bytes,
+        metadata: dict = None,
+        chunk_size_bytes: int = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, 'FsObject'] | 'FsObject':
+        return self._create(filename, src, metadata, chunk_size_bytes)
+
+    @sync.proxy
+    def exist(
+        self,
+        filename: str
+    ) -> typing.Coroutine[typing.Any, typing.Any, bool] | bool:
+        return self._exist(filename)
+
+    @sync.proxy
+    def revisions(
+        self,
+        filename: str
+    ) -> typing.Coroutine[typing.Any, typing.Any, list['FsObject']] | list['FsObject']:
+        return self._revisions(filename)
 
 
 # noinspection PyProtectedMember
@@ -1082,7 +1234,21 @@ class FsObject(documents.Document):
 
     __collection_name__ = 'fs.files'
 
-    async def create_revision(self, fs: FsBucket, src: typing.IO | bytes, metadata: dict = None):
+    @property
+    def content_type(self) -> str:
+        return self.metadata.get('contentType')
+
+    @property
+    def chunks(self) -> int:
+        import math
+        return math.ceil(self.length / self.chunk_size)
+
+    async def _create_revision(
+        self,
+        fs: FsBucket,
+        src: typing.IO | bytes,
+        metadata: dict = None
+    ) -> 'FsObject':
         """
         Creates a revision of the file.
 
@@ -1092,7 +1258,7 @@ class FsObject(documents.Document):
             metadata (dict, optional): Additional metadata for the new revision.
 
         """
-        await fs.create(
+        return await fs._create(
             self.filename,
             src=src,
             metadata=metadata,
@@ -1100,7 +1266,7 @@ class FsObject(documents.Document):
         )
 
     # noinspection SpellCheckingInspection
-    async def download(self, fs: FsBucket, dest: typing.IO, revision: int = None):
+    async def _download(self, fs: FsBucket, dest: typing.IO, revision: int = None):
         """
         Downloads the file from the file system.
 
@@ -1124,7 +1290,7 @@ class FsObject(documents.Document):
                 session=fs._session.driver_session
             )
 
-    async def stream(self, fs: FsBucket, revision: int = None) -> AsyncIOMotorGridOut:
+    async def _stream(self, fs: FsBucket, revision: int = None) -> 'FsOutput':
         """
         Streams the file from the file system.
 
@@ -1137,18 +1303,156 @@ class FsObject(documents.Document):
 
         """
         if revision is None:
-            return await fs._bucket.open_download_stream(
+            grid_out = await fs._bucket.open_download_stream(
                 file_id=self.id,
                 session=fs._session.driver_session
             )
-        return await fs._bucket.open_download_stream_by_name(
-            filename=self.filename,
-            revision=revision,
+        else:
+            grid_out = await fs._bucket.open_download_stream_by_name(
+                filename=self.filename,
+                revision=revision,
+                session=fs._session.driver_session
+            )
+        return FsOutput(grid_out)
+
+    async def _delete(self, fs: FsBucket):
+        await fs._bucket.delete(
+            file_id=self.id,
             session=fs._session.driver_session
         )
 
+    @sync.proxy
+    def create_revision(
+        self,
+        fs: FsBucket,
+        src: typing.IO | bytes,
+        metadata: dict = None
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FsObject'], 'FsObject']:
+        return self._create_revision(fs, src, metadata)
 
-# noinspection SpellCheckingInspection
+    @sync.proxy
+    def download(
+        self,
+        fs: FsBucket,
+        dest: typing.IO,
+        revision: int = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._download(fs, dest, revision)
+
+    @sync.proxy
+    def stream(
+        self,
+        fs: FsBucket,
+        revision: int = None
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FsOutput'], 'FsOutput']:
+        return self._stream(fs, revision)
+
+    @sync.proxy
+    def delete(self, fs: FsBucket) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        return self._delete(fs)
+
+
+class FsOutput:
+    """
+    Represents a file stored in MongoDB GridFS.
+
+    Args:
+        grid_out (AsyncIOMotorGridOut): The underlying GridFS file object.
+
+    """
+
+    def __init__(self, grid_out: AsyncIOMotorGridOut):
+        self._driver_grid_out = grid_out
+
+    async def _read(self, size: int = -1) -> bytes:
+        """
+        Reads data from the file asynchronously.
+
+        Args:
+            size (int, optional): The number of bytes to read. If not specified or negative, reads until EOF.
+
+        Returns:
+            bytes: The data read from the file.
+        """
+        return await self._driver_grid_out.read(size)
+
+    # noinspection SpellCheckingInspection
+    async def _readchunk(self) -> bytes:
+        """
+        Reads a chunk of data from the file asynchronously.
+
+        Returns:
+            bytes: The data chunk read from the file.
+        """
+        return await self._driver_grid_out.readchunk()
+
+    async def _readline(self, size: int = -1) -> bytes:
+        """
+        Reads a line from the file asynchronously.
+
+        Args:
+            size (int, optional): The maximum number of bytes to read. If not specified or negative, reads until EOF.
+
+        Returns:
+            bytes: The line read from the file.
+        """
+        return await self._driver_grid_out.readline(size)
+
+    def seek(self, pos: int, whence: int = os.SEEK_SET) -> int:
+        """
+        Moves the file pointer to a specified position.
+
+        Args:
+            pos (int): The position to seek to.
+            whence (int, optional): The reference point for the seek operation.
+
+        Returns:
+            int: The new position of the file pointer.
+        """
+        return self._driver_grid_out.seek(pos, whence)
+
+    def seekable(self) -> bool:
+        """
+        Checks if the file is seekable.
+
+        Returns:
+            bool: True if the file is seekable, False otherwise.
+        """
+        return self._driver_grid_out.seekable()
+
+    def tell(self) -> int:
+        """
+        Returns the current position of the file pointer.
+
+        Returns:
+            int: The current position of the file pointer.
+        """
+        return self._driver_grid_out.tell()
+
+    def close(self):
+        """Closes the file."""
+        self._driver_grid_out.close()
+
+    @sync.proxy
+    def read(
+        self,
+        size: int = -1
+    ) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        return self._read(size)
+
+    # noinspection SpellCheckingInspection
+    @sync.proxy
+    def readchunk(self) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        return self._readchunk()
+
+    @sync.proxy
+    def readline(
+        self,
+        size: int = -1
+    ) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        return self._readline(size)
+
+
 class Seeding(documents.Document):
     """
     Represents a seeding operation in the database.

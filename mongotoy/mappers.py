@@ -9,7 +9,7 @@ from types import UnionType, NoneType
 
 import bson
 
-from mongotoy import cache, expressions, references, types, geodata
+from mongotoy import cache, expressions, types, geodata
 from mongotoy.errors import ValidationError, ErrorWrapper
 
 if typing.TYPE_CHECKING:
@@ -362,6 +362,19 @@ class SequenceMapper(Mapper):
         """
         if not isinstance(value, self.__bind__):
             raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
+
+        # Validate extra options
+        if self._options.extra:
+            if 'min_items' in self._options.extra:
+                if len(value) < self._options.extra['min_items']:
+                    raise ValueError(
+                        f'Invalid value len {len(value)}, required min_items={self._options.extra["min_items"]}'
+                    )
+            if 'max_items' in self._options.extra:
+                if len(value) > self._options.extra['max_items']:
+                    raise ValueError(
+                        f'Invalid value len {len(value)}, required max_items={self._options.extra["max_items"]}'
+                    )
 
         new_value = []
         errors = []

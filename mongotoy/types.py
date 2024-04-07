@@ -1,11 +1,10 @@
-
 import collections
 import datetime
+import os
 import re
 import typing
 
 import bson
-from motor.motor_asyncio import AsyncIOMotorGridOut
 
 from mongotoy import geodata
 
@@ -356,13 +355,62 @@ class File(typing.Protocol):
     chunk_size: int
     length: int
     upload_date: datetime.datetime
+    content_type: str
+    chunks: int
 
-    async def create_revision(self, fs: 'db.FsBucket', src: typing.IO | bytes, metadata: dict = None):
+    def create_revision(
+        self,
+        fs: 'db.FsBucket',
+        src: typing.IO | bytes,
+        metadata: dict = None
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'File'], 'File']:
         pass
 
     # noinspection SpellCheckingInspection
-    async def download(self, fs: 'db.FsBucket', dest: typing.IO, revision: int = None):
+    def download(
+        self,
+        fs: 'db.FsBucket',
+        dest: typing.IO,
+        revision: int = None
+    ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
         pass
 
-    async def stream(self, fs: 'db.FsBucket', revision: int = None) -> AsyncIOMotorGridOut:
+    def stream(
+        self,
+        fs: 'db.FsBucket',
+        revision: int = None
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, '_FileOut'], '_FileOut']:
         pass
+
+    def delete(self, fs: 'db.FsBucket') -> typing.Coroutine[typing.Any, typing.Any, None] | None:
+        pass
+
+
+class _FileOut(typing.Protocol):
+    # noinspection SpellCheckingInspection
+    """
+    This is a facade for type mogotoy.db.FsOutput
+    """
+
+    def seek(self, pos: int, whence: int = os.SEEK_SET) -> int:
+        pass
+
+    def seekable(self) -> bool:
+        pass
+
+    def tell(self) -> int:
+        pass
+
+    def close(self):
+        pass
+
+    def read(self, size: int = -1) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        pass
+
+    # noinspection SpellCheckingInspection
+    def readchunk(self) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        pass
+
+    def readline(self, size: int = -1) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
+        pass
+
