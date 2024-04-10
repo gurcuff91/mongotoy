@@ -367,7 +367,7 @@ class File(typing.Protocol):
         pass
 
     # noinspection SpellCheckingInspection
-    def download(
+    def download_to(
         self,
         fs: 'db.FsBucket',
         dest: typing.IO,
@@ -379,17 +379,17 @@ class File(typing.Protocol):
         self,
         fs: 'db.FsBucket',
         revision: int = None
-    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, '_FileOut'], '_FileOut']:
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FileStream'], 'FileStream']:
         pass
 
     def delete(self, fs: 'db.FsBucket') -> typing.Coroutine[typing.Any, typing.Any, None] | None:
         pass
 
 
-class _FileOut(typing.Protocol):
+class FileStream(typing.Protocol):
     # noinspection SpellCheckingInspection
     """
-    This is a facade for type mogotoy.db.FsOutput
+    This is a facade for type mogotoy.db.FsObjectStream
     """
 
     def seek(self, pos: int, whence: int = os.SEEK_SET) -> int:

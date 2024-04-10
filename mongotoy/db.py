@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import functools
 import inspect
-import math
 import mimetypes
 import os
 import typing
@@ -1266,7 +1265,7 @@ class FsObject(documents.Document):
         )
 
     # noinspection SpellCheckingInspection
-    async def _download(self, fs: FsBucket, dest: typing.IO, revision: int = None):
+    async def _download_to(self, fs: FsBucket, dest: typing.IO, revision: int = None):
         """
         Downloads the file from the file system.
 
@@ -1290,7 +1289,7 @@ class FsObject(documents.Document):
                 session=fs._session.driver_session
             )
 
-    async def _stream(self, fs: FsBucket, revision: int = None) -> 'FsOutput':
+    async def _stream(self, fs: FsBucket, revision: int = None) -> 'FsObjectStream':
         """
         Streams the file from the file system.
 
@@ -1313,7 +1312,7 @@ class FsObject(documents.Document):
                 revision=revision,
                 session=fs._session.driver_session
             )
-        return FsOutput(grid_out)
+        return FsObjectStream(grid_out)
 
     async def _delete(self, fs: FsBucket):
         await fs._bucket.delete(
@@ -1331,20 +1330,20 @@ class FsObject(documents.Document):
         return self._create_revision(fs, src, metadata)
 
     @sync.proxy
-    def download(
+    def download_to(
         self,
         fs: FsBucket,
         dest: typing.IO,
         revision: int = None
     ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
-        return self._download(fs, dest, revision)
+        return self._download_to(fs, dest, revision)
 
     @sync.proxy
     def stream(
         self,
         fs: FsBucket,
         revision: int = None
-    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FsOutput'], 'FsOutput']:
+    ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FsObjectStream'], 'FsObjectStream']:
         return self._stream(fs, revision)
 
     @sync.proxy
@@ -1352,9 +1351,9 @@ class FsObject(documents.Document):
         return self._delete(fs)
 
 
-class FsOutput:
+class FsObjectStream:
     """
-    Represents a file stored in MongoDB GridFS.
+    Represents the contents of file stored in MongoDB GridFS.
 
     Args:
         grid_out (AsyncIOMotorGridOut): The underlying GridFS file object.
