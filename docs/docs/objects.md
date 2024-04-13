@@ -168,4 +168,71 @@ async with engine.session() as session:
 
 ## Querying Expressions
 
+In Mongotoy, you have a variety of options for crafting queries to suit your needs. You can opt for a Pythonic approach,
+using basic operands for simpler operations. Alternatively, you can leverage the `mongotoy.expressions.Query` class to 
+access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
+offers a similar syntax through `mongotoy.expressions.Q` function. Additionally, if you prefer to work with raw MongoDB
+queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
+method that best fits your requirements and preferences.
+
+You can construct queries by utilizing Document fields along with Python operands and values, providing an intuitive 
+and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.
+
+Supported operand are:
+
+- `==`: Represents equality comparison of the field.
+- `!=`: Represents inequality comparison of the field.
+- `>`: Represents greater-than comparison of the field.
+- `>=`: Represents greater-than-or-equal-to comparison of the field.
+- `<`: Represents less-than comparison of the field.
+- `<=`: Represents less-than-or-equal-to comparison of the field.
+
+````python
+# Persons older than 21 years
+Person.age > 21
+
+# Persons from USA
+Person.address.country == 'USA'
+````
+
+Mongotoy also supports logical operands such as `AND`, `OR`, and `NOT` to combine queries. These operators enable you
+to create more complex and sophisticated query expressions by joining multiple conditions together.
+
+Supported logic operand are:
+
+- `&`: Represents the logical `AND` operation between two query expressions.
+- `|`: Represents the logical `OR` operation between two query expressions.
+- `~`: Represents the logical `NOT` operation on the query expression.
+
+````python
+# Persons older than 21 years and younger than 60 years
+Person.age > 21 & Person.age < 60
+
+# Non-USA persons
+~Person.address.country == 'USA'
+````
+
+When concatenating multiple queries with logical operands like `AND` or `OR`, you can use parentheses to enclose 
+related expressions, providing clearer grouping.
+
+````python
+# Persons older than 21 years and younger than 60 years, or persons from USA
+(Person.age > 21 & Person.age < 60) | Person.address.country == 'USA'
+````
+
+/// warning | Attention
+It's important to use parentheses correctly for expression grouping, as improper usage can lead to incorrect query
+expressions.
+///
+
+Mongotoy's `mongotoy.expressions.Query` class empowers you to construct MongoDB query expressions with flexibility. 
+It offers an array of methods for creating comparisons, enabling the crafting of complex queries. These methods serve
+as a convenient interface for generating specific query expressions, tailored precisely to your requirements.
+
+### Using Query class
+
+### Using Q function 
+
+### Using raw queries
+
 ## Sorting Expressions
