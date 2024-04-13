@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
     
     
       
@@ -30,7 +30,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -661,6 +661,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Querying Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-query-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Query class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-q-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Q function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-raw-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using raw queries
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -826,6 +859,39 @@
       Querying Expressions
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Querying Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-query-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Query class
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-q-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Q function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-raw-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using raw queries
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1035,6 +1101,68 @@ analysis of data.</p>
     <span class="n">persons_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="querying-expressions">Querying Expressions</h2>
+<p>In Mongotoy, you have a variety of options for crafting queries to suit your needs. You can opt for a Pythonic approach,
+using basic operands for simpler operations. Alternatively, you can leverage the <code>mongotoy.expressions.Query</code> class to 
+access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
+offers a similar syntax through <code>mongotoy.expressions.Q</code> function. Additionally, if you prefer to work with raw MongoDB
+queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
+method that best fits your requirements and preferences.</p>
+<p>You can construct queries by utilizing Document fields along with Python operands and values, providing an intuitive 
+and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.</p>
+<p>Supported operand are:</p>
+<ul>
+<li><code>==</code>: Represents equality comparison of the field.</li>
+<li><code>!=</code>: Represents inequality comparison of the field.</li>
+<li><code>&gt;</code>: Represents greater-than comparison of the field.</li>
+<li><code>&gt;=</code>: Represents greater-than-or-equal-to comparison of the field.</li>
+<li><code>&lt;</code>: Represents less-than comparison of the field.</li>
+<li><code>&lt;=</code>: Represents less-than-or-equal-to comparison of the field.</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Persons older than 21 years</span>
+<span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&gt;</span> <span class="mi">21</span>
+
+<span class="c1"># Persons from USA</span>
+<span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span> <span class="o">==</span> <span class="s1">&#39;USA&#39;</span>
+</code></pre></div></td></tr></table></div>
+<p>Mongotoy also supports logical operands such as <code>AND</code>, <code>OR</code>, and <code>NOT</code> to combine queries. These operators enable you
+to create more complex and sophisticated query expressions by joining multiple conditions together.</p>
+<p>Supported logic operand are:</p>
+<ul>
+<li><code>&amp;</code>: Represents the logical <code>AND</code> operation between two query expressions.</li>
+<li><code>|</code>: Represents the logical <code>OR</code> operation between two query expressions.</li>
+<li><code>~</code>: Represents the logical <code>NOT</code> operation on the query expression.</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Persons older than 21 years and younger than 60 years</span>
+<span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&gt;</span> <span class="mi">21</span> <span class="o">&amp;</span> <span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&lt;</span> <span class="mi">60</span>
+
+<span class="c1"># Non-USA persons</span>
+<span class="o">~</span><span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span> <span class="o">==</span> <span class="s1">&#39;USA&#39;</span>
+</code></pre></div></td></tr></table></div>
+<p>When concatenating multiple queries with logical operands like <code>AND</code> or <code>OR</code>, you can use parentheses to enclose 
+related expressions, providing clearer grouping.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Persons older than 21 years and younger than 60 years, or persons from USA</span>
+<span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&gt;</span> <span class="mi">21</span> <span class="o">&amp;</span> <span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">)</span> <span class="o">|</span> <span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span> <span class="o">==</span> <span class="s1">&#39;USA&#39;</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition warning">
+<p class="admonition-title">Attention</p>
+<p>It's important to use parentheses correctly for expression grouping, as improper usage can lead to incorrect query
+expressions.</p>
+</div>
+<p>Mongotoy's <code>mongotoy.expressions.Query</code> class empowers you to construct MongoDB query expressions with flexibility. 
+It offers an array of methods for creating comparisons, enabling the crafting of complex queries. These methods serve
+as a convenient interface for generating specific query expressions, tailored precisely to your requirements.</p>
+<h3 id="using-query-class">Using Query class</h3>
+<h3 id="using-q-function">Using Q function</h3>
+<h3 id="using-raw-queries">Using raw queries</h3>
 <h2 id="sorting-expressions">Sorting Expressions</h2>
 
 
@@ -1085,7 +1213,7 @@ analysis of data.</p>
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tabs", "navigation.indexes", "search.suggest", "content.code.copy"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.bd41221c.min.js"></script>
+      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
       
     
   </body>
