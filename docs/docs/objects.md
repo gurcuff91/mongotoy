@@ -169,13 +169,13 @@ async with engine.session() as session:
 ## Querying Expressions
 
 In Mongotoy, you have a variety of options for crafting queries to suit your needs. You can opt for a Pythonic approach,
-using basic operands for simpler operations. Alternatively, you can leverage the `mongotoy.expressions.Query` class to 
+using basic operands for simpler operations. Alternatively, you can leverage the [Query class](#the-query-class) to 
 access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
-offers a similar syntax through `mongotoy.expressions.Q` function. Additionally, if you prefer to work with raw MongoDB
+offers a similar syntax through [Q function](#the-q-function). Additionally, if you prefer to work with raw MongoDB
 queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
 method that best fits your requirements and preferences.
 
-You can construct queries by utilizing Document fields along with Python operands and values, providing an intuitive 
+You can construct queries by using Document fields along with Python operands and values, providing an intuitive 
 and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.
 
 Supported operand are:
@@ -194,6 +194,8 @@ Person.age > 21
 # Persons from USA
 Person.address.country == 'USA'
 ````
+
+### Logic operands
 
 Mongotoy also supports logical operands such as `AND`, `OR`, and `NOT` to combine queries. These operators enable you
 to create more complex and sophisticated query expressions by joining multiple conditions together.
@@ -225,14 +227,151 @@ It's important to use parentheses correctly for expression grouping, as improper
 expressions.
 ///
 
+### The Query class
+
 Mongotoy's `mongotoy.expressions.Query` class empowers you to construct MongoDB query expressions with flexibility. 
 It offers an array of methods for creating comparisons, enabling the crafting of complex queries. These methods serve
 as a convenient interface for generating specific query expressions, tailored precisely to your requirements.
 
-### Using Query class
+Supported methods are:
 
-### Using Q function 
+- **Eq**: Creates an equality query expression
+- **Ne**: Creates a not-equal query expression
+- **Gt**: Creates a greater-than query expression.
+- **Gte**: Creates a greater-than-or-equal query expression.
+- **Lt**: Creates a less-than query expression.
+- **Lte**: Creates a less-than-or-equal query expression.
+- **In**: Creates an 'in' query expression.
+- **Nin**: Creates a 'not in' query expression.
+- **Regex**: Creates a regex query expression.
 
-### Using raw queries
+````python
+from mongotoy.expressions import Query
+
+# Persons older than 21 years
+Query.Gt(Person.age, 21)
+
+# Persons from USA
+Query.Eq(Person.address.country, 'USA')
+
+# Non-USA persons
+Query.Ne(Person.address.country, 'USA')
+
+# Persons older than 21 years and younger than 60 years, or persons from USA
+(Query.Gt(Person.age, 21) & Query.Lt(Person.age, 60)) | Query.Eq(Person.address.country, 'USA')
+````
+
+/// note
+All methods in the `Query` class support _string values_ to specify fields.
+
+````python
+from mongotoy.expressions import Query
+
+# Persons older than 21 years
+Query.Gt('age', 21)
+````
+
+/// warning | Attention
+To ensure accurate querying expressions, use the `alias` rather than the field `name` for fields with defined aliases. 
+Otherwise, querying operations might target nonexistent database fields, resulting in inaccuracies.
+///
+///
+
+### The Q function
+
+The `mongotoy.expressions.Q` function is a flexible constructor for creating complex query expressions in a database. 
+It accepts any number of keyword arguments, where each argument represents a field and its corresponding query 
+condition. 
+
+The function parses each keyword, separating the field name from the operator, which is connected by
+**double underscores**. For instance, `name__eq` implies an **equality** check on the `name` field. The function then
+dynamically constructs a query by combining these conditions using logical `AND` operations. This allows users to build
+queries in a more readable and intuitive way, compared to manually constructing query strings.
+
+The `Q` function is particularly useful in scenarios where the query parameters are not known in advance and need to be constructed at 
+runtime based on user input or other dynamic data sources. It encapsulates the complexity of query construction, 
+providing a clean and maintainable interface for building queries.
+
+````python
+from mongotoy.expressions import Q
+
+# Persons older than 21 years
+Q(age__eq=21)
+
+# Persons from USA
+Q(address__country__eq='USA')
+
+# Non-USA persons
+Q(address__country__ne='USA')
+
+# Persons older than 21 years and younger than 60 years, or persons from USA
+(Q(age__gt=21) & Q(age__lt=60)) | Q(address__country__eq='USA')
+````
 
 ## Sorting Expressions
+
+In Mongotoy, you have a variety of options for crafting sorting expressions to suit your needs. You can opt for a 
+Pythonic approach, using basic operands for simpler operations. Alternatively, you can leverage the 
+Sort class.
+
+You can construct sorting expressions in Mongotoy by using document fields preceded with `-` for _descending_ or `+` for
+_ascending_ directions, offering an intuitive and Pythonic approach. This method simplifies the expression of basic 
+sorting criteria, making it ideal for straightforward sorting tasks.
+
+````python
+# Sort Persons descending by age
+-Person.age
+
+# Sort Persons ascending by age
++Person.age
+````
+
+### Multiple sorting
+
+Mongotoy offers a seamless way to merge multiple sorting expressions using the `|` operator, providing you with a
+powerful tool for constructing sophisticated sorting criteria effortlessly.
+
+````python
+# Sort Persons descending by age and ascending by date of birth (dob)
+-Person.age | +Person.dob
+````
+
+### The Sort class
+
+In Mongotoy, you can use the `mongotoy.expressions.Sort` class to effortlessly create versatile sorting expressions.
+With clear representations and handy utility methods at your disposal, generating ascending and descending sort 
+expressions becomes a breeze, streamlining your sorting operations.
+
+Supported methods are:
+
+- **Asc**: Creates an ascending sort expressions
+- **Desc**: Creates a descending sort expressions
+
+````python
+from mongotoy.expressions import Sort
+
+# Sort Persons descending by age
+Sort.Desc(Person.age)
+
+# Sort Persons ascending by age and date of birth
+Sort.Asc(Person.age, Person.dob)
+
+# Sort Persons descending by age and ascending by date of birth (dob)
+Sort.Desc(Person.age) | Sort.Asc(Person.dob)
+````
+
+/// note
+All methods in the `Sort` class support _string values_ to specify fields.
+
+````python
+from mongotoy.expressions import Sort
+
+# Sort Persons descending by age and dob
+Sort.Desc('age', 'dob')
+````
+
+/// warning | Attention
+To ensure accurate sorting expressions, use the `alias` rather than the field `name` for fields with defined aliases. 
+Otherwise, sorting operations might target nonexistent database fields, resulting in inaccuracies.
+///
+///
