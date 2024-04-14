@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
     
     
       
@@ -30,7 +30,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.bcfcd587.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -665,27 +665,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-query-class" class="md-nav__link">
+  <a href="#logic-operands" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Query class
+      Logic operands
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-q-function" class="md-nav__link">
+  <a href="#the-query-class" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Q function
+      The Query class
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-raw-queries" class="md-nav__link">
+  <a href="#the-q-function" class="md-nav__link">
     <span class="md-ellipsis">
-      Using raw queries
+      The Q function
     </span>
   </a>
   
@@ -702,6 +702,30 @@
       Sorting Expressions
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Sorting Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiple-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple sorting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-sort-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Sort class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -864,27 +888,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-query-class" class="md-nav__link">
+  <a href="#logic-operands" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Query class
+      Logic operands
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-q-function" class="md-nav__link">
+  <a href="#the-query-class" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Q function
+      The Query class
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-raw-queries" class="md-nav__link">
+  <a href="#the-q-function" class="md-nav__link">
     <span class="md-ellipsis">
-      Using raw queries
+      The Q function
     </span>
   </a>
   
@@ -901,6 +925,30 @@
       Sorting Expressions
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Sorting Expressions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiple-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple sorting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-sort-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Sort class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1102,12 +1150,12 @@ analysis of data.</p>
 </code></pre></div></td></tr></table></div>
 <h2 id="querying-expressions">Querying Expressions</h2>
 <p>In Mongotoy, you have a variety of options for crafting queries to suit your needs. You can opt for a Pythonic approach,
-using basic operands for simpler operations. Alternatively, you can leverage the <code>mongotoy.expressions.Query</code> class to 
+using basic operands for simpler operations. Alternatively, you can leverage the <a href="#the-query-class">Query class</a> to 
 access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
-offers a similar syntax through <code>mongotoy.expressions.Q</code> function. Additionally, if you prefer to work with raw MongoDB
+offers a similar syntax through <a href="#the-q-function">Q function</a>. Additionally, if you prefer to work with raw MongoDB
 queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
 method that best fits your requirements and preferences.</p>
-<p>You can construct queries by utilizing Document fields along with Python operands and values, providing an intuitive 
+<p>You can construct queries by using Document fields along with Python operands and values, providing an intuitive 
 and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.</p>
 <p>Supported operand are:</p>
 <ul>
@@ -1128,6 +1176,7 @@ and Pythonic approach. This method allows you to express basic operations with e
 <span class="c1"># Persons from USA</span>
 <span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span> <span class="o">==</span> <span class="s1">&#39;USA&#39;</span>
 </code></pre></div></td></tr></table></div>
+<h3 id="logic-operands">Logic operands</h3>
 <p>Mongotoy also supports logical operands such as <code>AND</code>, <code>OR</code>, and <code>NOT</code> to combine queries. These operators enable you
 to create more complex and sophisticated query expressions by joining multiple conditions together.</p>
 <p>Supported logic operand are:</p>
@@ -1157,13 +1206,172 @@ related expressions, providing clearer grouping.</p>
 <p>It's important to use parentheses correctly for expression grouping, as improper usage can lead to incorrect query
 expressions.</p>
 </div>
+<h3 id="the-query-class">The Query class</h3>
 <p>Mongotoy's <code>mongotoy.expressions.Query</code> class empowers you to construct MongoDB query expressions with flexibility. 
 It offers an array of methods for creating comparisons, enabling the crafting of complex queries. These methods serve
 as a convenient interface for generating specific query expressions, tailored precisely to your requirements.</p>
-<h3 id="using-query-class">Using Query class</h3>
-<h3 id="using-q-function">Using Q function</h3>
-<h3 id="using-raw-queries">Using raw queries</h3>
+<p>Supported methods are:</p>
+<ul>
+<li><strong>Eq</strong>: Creates an equality query expression</li>
+<li><strong>Ne</strong>: Creates a not-equal query expression</li>
+<li><strong>Gt</strong>: Creates a greater-than query expression.</li>
+<li><strong>Gte</strong>: Creates a greater-than-or-equal query expression.</li>
+<li><strong>Lt</strong>: Creates a less-than query expression.</li>
+<li><strong>Lte</strong>: Creates a less-than-or-equal query expression.</li>
+<li><strong>In</strong>: Creates an 'in' query expression.</li>
+<li><strong>Nin</strong>: Creates a 'not in' query expression.</li>
+<li><strong>Regex</strong>: Creates a regex query expression.</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.expressions</span> <span class="kn">import</span> <span class="n">Query</span>
+
+<span class="c1"># Persons older than 21 years</span>
+<span class="n">Query</span><span class="o">.</span><span class="n">Gt</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+
+<span class="c1"># Persons from USA</span>
+<span class="n">Query</span><span class="o">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span><span class="p">,</span> <span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+
+<span class="c1"># Non-USA persons</span>
+<span class="n">Query</span><span class="o">.</span><span class="n">Ne</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span><span class="p">,</span> <span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+
+<span class="c1"># Persons older than 21 years and younger than 60 years, or persons from USA</span>
+<span class="p">(</span><span class="n">Query</span><span class="o">.</span><span class="n">Gt</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">Query</span><span class="o">.</span><span class="n">Lt</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="mi">60</span><span class="p">))</span> <span class="o">|</span> <span class="n">Query</span><span class="o">.</span><span class="n">Eq</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">country</span><span class="p">,</span> <span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All methods in the <code>Query</code> class support <em>string values</em> to specify fields.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.expressions</span> <span class="kn">import</span> <span class="n">Query</span>
+
+<span class="c1"># Persons older than 21 years</span>
+<span class="n">Query</span><span class="o">.</span><span class="n">Gt</span><span class="p">(</span><span class="s1">&#39;age&#39;</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition warning">
+<p class="admonition-title">Attention</p>
+<p>To ensure accurate querying expressions, use the <code>alias</code> rather than the field <code>name</code> for fields with defined aliases. 
+Otherwise, querying operations might target nonexistent database fields, resulting in inaccuracies.</p>
+</div>
+</div>
+<h3 id="the-q-function">The Q function</h3>
+<p>The <code>mongotoy.expressions.Q</code> function is a flexible constructor for creating complex query expressions in a database. 
+It accepts any number of keyword arguments, where each argument represents a field and its corresponding query 
+condition. </p>
+<p>The function parses each keyword, separating the field name from the operator, which is connected by
+<strong>double underscores</strong>. For instance, <code>name__eq</code> implies an <strong>equality</strong> check on the <code>name</code> field. The function then
+dynamically constructs a query by combining these conditions using logical <code>AND</code> operations. This allows users to build
+queries in a more readable and intuitive way, compared to manually constructing query strings.</p>
+<p>The <code>Q</code> function is particularly useful in scenarios where the query parameters are not known in advance and need to be constructed at 
+runtime based on user input or other dynamic data sources. It encapsulates the complexity of query construction, 
+providing a clean and maintainable interface for building queries.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.expressions</span> <span class="kn">import</span> <span class="n">Q</span>
+
+<span class="c1"># Persons older than 21 years</span>
+<span class="n">Q</span><span class="p">(</span><span class="n">age__eq</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span>
+
+<span class="c1"># Persons from USA</span>
+<span class="n">Q</span><span class="p">(</span><span class="n">address__country__eq</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+
+<span class="c1"># Non-USA persons</span>
+<span class="n">Q</span><span class="p">(</span><span class="n">address__country__ne</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+
+<span class="c1"># Persons older than 21 years and younger than 60 years, or persons from USA</span>
+<span class="p">(</span><span class="n">Q</span><span class="p">(</span><span class="n">age__gt</span><span class="o">=</span><span class="mi">21</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">Q</span><span class="p">(</span><span class="n">age__lt</span><span class="o">=</span><span class="mi">60</span><span class="p">))</span> <span class="o">|</span> <span class="n">Q</span><span class="p">(</span><span class="n">address__country__eq</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
 <h2 id="sorting-expressions">Sorting Expressions</h2>
+<p>In Mongotoy, you have a variety of options for crafting sorting expressions to suit your needs. You can opt for a 
+Pythonic approach, using basic operands for simpler operations. Alternatively, you can leverage the 
+Sort class.</p>
+<p>You can construct sorting expressions in Mongotoy by using document fields preceded with <code>-</code> for <em>descending</em> or <code>+</code> for
+<em>ascending</em> directions, offering an intuitive and Pythonic approach. This method simplifies the expression of basic 
+sorting criteria, making it ideal for straightforward sorting tasks.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Sort Persons descending by age</span>
+<span class="o">-</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span>
+
+<span class="c1"># Sort Persons ascending by age</span>
+<span class="o">+</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="multiple-sorting">Multiple sorting</h3>
+<p>Mongotoy offers a seamless way to merge multiple sorting expressions using the <code>|</code> operator, providing you with a
+powerful tool for constructing sophisticated sorting criteria effortlessly.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Sort Persons descending by age and ascending by date of birth (dob)</span>
+<span class="o">-</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">|</span> <span class="o">+</span><span class="n">Person</span><span class="o">.</span><span class="n">dob</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="the-sort-class">The Sort class</h3>
+<p>In Mongotoy, you can use the <code>mongotoy.expressions.Sort</code> class to effortlessly create versatile sorting expressions.
+With clear representations and handy utility methods at your disposal, generating ascending and descending sort 
+expressions becomes a breeze, streamlining your sorting operations.</p>
+<p>Supported methods are:</p>
+<ul>
+<li><strong>Asc</strong>: Creates an ascending sort expressions</li>
+<li><strong>Desc</strong>: Creates a descending sort expressions</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.expressions</span> <span class="kn">import</span> <span class="n">Sort</span>
+
+<span class="c1"># Sort Persons descending by age</span>
+<span class="n">Sort</span><span class="o">.</span><span class="n">Desc</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>
+
+<span class="c1"># Sort Persons ascending by age and date of birth</span>
+<span class="n">Sort</span><span class="o">.</span><span class="n">Asc</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">,</span> <span class="n">Person</span><span class="o">.</span><span class="n">dob</span><span class="p">)</span>
+
+<span class="c1"># Sort Persons descending by age and ascending by date of birth (dob)</span>
+<span class="n">Sort</span><span class="o">.</span><span class="n">Desc</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span><span class="p">)</span> <span class="o">|</span> <span class="n">Sort</span><span class="o">.</span><span class="n">Asc</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">dob</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All methods in the <code>Sort</code> class support <em>string values</em> to specify fields.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy.expressions</span> <span class="kn">import</span> <span class="n">Sort</span>
+
+<span class="c1"># Sort Persons descending by age and dob</span>
+<span class="n">Sort</span><span class="o">.</span><span class="n">Desc</span><span class="p">(</span><span class="s1">&#39;age&#39;</span><span class="p">,</span> <span class="s1">&#39;dob&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="admonition warning">
+<p class="admonition-title">Attention</p>
+<p>To ensure accurate sorting expressions, use the <code>alias</code> rather than the field <code>name</code> for fields with defined aliases. 
+Otherwise, sorting operations might target nonexistent database fields, resulting in inaccuracies.</p>
+</div>
+</div>
 
 
 
@@ -1213,7 +1421,7 @@ as a convenient interface for generating specific query expressions, tailored pr
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tabs", "navigation.indexes", "search.suggest", "content.code.copy"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      <script src="../../assets/javascripts/bundle.bd41221c.min.js"></script>
       
     
   </body>
