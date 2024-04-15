@@ -15,7 +15,7 @@ fields with specific properties tailored to the application needs, offering enha
 in document definition.
 
 
-### Customization Parameters
+### Customization parameters
 
 The `mongotoy.field()` function accepts the following parameters:
 
@@ -44,14 +44,7 @@ class Person(Document):
     dob: datetime.datetime = field(default_factory=datetime.date.today)
 ````
 
-This example illustrates the definition of a `Person` document class with tailored field configurations.
-The `code` field serves as the _primary key_, automatically generated with a unique identifier through
-`uuid.uuid4().hex`. Additionally, the `name` field is indexed for text search using `pymongo.TEXT` and enforced
-as unique. The `age` field is indexed in descending order to optimize sorting operations. Finally, the dob field 
-defaults to the current date using `datetime.date.today()`. 
-
-
-### Using extra configurations
+### Extra configurations
 
 The `mongotoy.field()` function accommodates an arbitrary number of additional parameters for fine-tuning field 
 creation and validation. Certain [data types](/gurcuff91/mongotoy/docs/data_types) support specific configuration 
@@ -70,11 +63,19 @@ configuration parameters to fine-tune how comparisons are conducted.
 
 #### String type
 
-In addition, the `str` type supports several configuration parameters for customization:
+The `str` type supports these configuration parameters for customization:
 
-- **min_len**: Specifies the minimum length allowed for the string.
-- **max_len**: Specifies the maximum length allowed for the string.
-- **choices**: Defines a list of valid choices for the string value.
+- **min_len**: Specifies the minimum length allowed.
+- **max_len**: Specifies the maximum length allowed.
+- **choices**: Defines a list of valid value choices.
+
+#### Sequence types
+
+Sequence types such as `list`, `tuple` and `set` supports these configuration parameters for customization:
+
+- **min_items**: Specifies the minimum items allowed.
+- **max_items**: Specifies the maximum items allowed.
+
 
 The following example shows how to use extra configuration parameters:
 
@@ -85,11 +86,5 @@ from mongotoy import Document, field
 class Person(Document):
     name: str = field(max_len=128)
     age: int = field(gte=21)
-    fav_color: str = field(choices=['white', 'black', 'red', 'blue', 'green'])
+    colors: list[str] = field(choices=['white', 'black', 'green'], max_items=2)
 ````
-
-In this example, the `Person` document defines three fields: `name`, `age`, and `fav_color`. The `name` field is of 
-type `str` and is configured with a _maximum length_ of 128 characters. For the `age` field, which is of type `int`, a 
-_minimum value_ of 21 is specified. Lastly, the `fav_color` field, also of type `str`, is constrained to a predefined 
-set of _choices_: `'white', 'black', 'red', 'blue', and 'green'`. Any validation that violates these rules will 
-raise a `mongotoy.error.DocumentValidation` error.

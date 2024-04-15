@@ -1265,53 +1265,59 @@ class FsObject(documents.Document):
         )
 
     # noinspection SpellCheckingInspection
-    async def _download_to(self, fs: FsBucket, dest: typing.IO, revision: int = None):
+    async def _download_to(self, fs: FsBucket, dest: typing.IO, revision: int = 0):
         """
-        Downloads the file from the file system.
+        Downloads a file revision.
+
+        Revision numbers are defined as follows:
+
+            0 = the original stored file
+            1 = the first revision
+            2 = the second revision
+            ...
+            -2 = the second most recent revision
+            -1 = the most recent revision
 
         Args:
             fs (FsBucket): The file system bucket from where the file will be downloaded.
             dest (typing.IO): The destination file object to write the downloaded file contents.
-            revision (int): The revision number of the file to download. If None, download the latest revision.
+            revision (int): The revision number of the file to download.
 
         """
-        if revision is None:
-            await fs._bucket.download_to_stream(
-                file_id=self.id,
-                destination=dest,
-                session=fs._session.driver_session
-            )
-        else:
-            await fs._bucket.download_to_stream_by_name(
-                filename=self.filename,
-                destination=dest,
-                revision=revision,
-                session=fs._session.driver_session
-            )
+        await fs._bucket.download_to_stream_by_name(
+            filename=self.filename,
+            destination=dest,
+            revision=revision,
+            session=fs._session.driver_session
+        )
 
-    async def _stream(self, fs: FsBucket, revision: int = None) -> 'FsObjectStream':
+    async def _stream(self, fs: FsBucket, revision: int = 0) -> 'FsObjectStream':
         """
         Streams the file from the file system.
 
+        Revision numbers are defined as follows:
+
+            0 = the original stored file
+            1 = the first revision
+            2 = the second revision
+            ...
+            -2 = the second most recent revision
+            -1 = the most recent revision
+
         Args:
             fs (FsBucket): The file system bucket from where the file will be streamed.
-            revision (int, optional): The revision number of the file to stream. If None, streams the latest revision.
+            revision (int, optional): The revision number of the file to stream.
 
         Returns:
-            AsyncIOMotorGridOut: An asynchronous grid file stream.
+            FsObjectStream: An asynchronous file streamer.
 
         """
-        if revision is None:
-            grid_out = await fs._bucket.open_download_stream(
-                file_id=self.id,
-                session=fs._session.driver_session
-            )
-        else:
-            grid_out = await fs._bucket.open_download_stream_by_name(
-                filename=self.filename,
-                revision=revision,
-                session=fs._session.driver_session
-            )
+        grid_out = await fs._bucket.open_download_stream_by_name(
+            filename=self.filename,
+            revision=revision,
+            session=fs._session.driver_session
+        )
+
         return FsObjectStream(grid_out)
 
     async def _delete(self, fs: FsBucket):

@@ -12,7 +12,7 @@
 Mongotoy supports a wide range of data types, encompassing both common built-in Python types and custom types 
 tailored to specific use cases. 
 
-#### Supported built-in Python types
+#### Supported built-in types
 
 - `str`
 - `bool`
@@ -25,17 +25,17 @@ tailored to specific use cases.
 - `datetime.time`
 - `uuid.UUID`
 
-#### Supported bson types
-
-- `bson.ObjectId`
-
 #### Supported sequence types
 
 - `list`
 - `tuple`
 - `set`
 
-#### Supported custom types
+#### Supported bson types
+
+- `bson.ObjectId`
+
+#### Custom types
 
 - `mogotoy.types.IpV4`: Represents an IPv4 address.
 - `mogotoy.types.IpV6`: Represents an IPv6 address.
@@ -59,10 +59,10 @@ tailored to specific use cases.
 - `mogotoy.types.Bson`: Represents a valid bson data.
 - `mogotoy.types.File`: Represents a Grid-FS object.
 
-You can effortlessly utilize these data types within your documents, and Mongotoy will take care of automatic 
-field creation and validation.
+You can effortlessly use these data types within your documents, and Mongotoy will take care of automatic field creation
+and validation.
 
-### Using Nullable types
+### Using nullable types
 By default, Mongotoy does not permit `null` data. However, you can specify nullability using `typing.Optional`. 
 Below is an example of a Person document that allows `null` data:
 
@@ -78,7 +78,7 @@ class Person(Document):
     dob: Optional[datetime.datetime]
 ````
 
-### Using Documents types
+### Using documents types
 
 Mongotoy facilitates the integration of other documents as types within documents, offering a flexible approach 
 to defining complex data structures. This means you can use instances of other Mongotoy document classes as 
@@ -142,11 +142,11 @@ class Person(Document):
 The only difference is the base class of the `Address` document.
 ///
 
-#### Forwarding Types
+#### Forwarding types
 
 Mongotoy facilitates the utilization of document types as [forward dependencies](https://peps.python.org/pep-0563/#forward-references), 
 enabling the use of document types that may not have been created yet or are defined in different modules.
-This feature supports self-referential document type as well.
+This feature supports a self-referential document type as well.
 
 Here's an example demonstrating the use of a self-referential document type:
 

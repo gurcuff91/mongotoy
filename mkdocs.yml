@@ -58,3 +58,4 @@ nav:
       - Database: docs/database.md
       - Objects: docs/objects.md
       - Files: docs/files.md
+      - Sync Mode: docs/sync_mode.md

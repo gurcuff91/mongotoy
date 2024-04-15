@@ -87,7 +87,7 @@ See [session](#session)
 
 ### Execute migration
 
-Migrations in `Mongotoy` cover a range of tasks essential for seamlessly transitioning your data structures into
+Migrations in Mongotoy cover a range of tasks essential for seamlessly transitioning your data structures into
 MongoDB. These tasks include migrating _indexes_, creating _capped collections_, and defining _time series_ collections.
 This comprehensive support ensures that your data migration process is efficient and encompasses all necessary 
 configurations for optimal data management in MongoDB.
@@ -111,7 +111,7 @@ Migrations are only applied if the associated collection for the document does n
 
 ### Execute seeding
 
-Seeding in `Mongotoy` provides a convenient way to populate your database with _initial data_, ensuring that your 
+Seeding in Mongotoy provides a convenient way to populate your database with _initial data_, ensuring that your 
 database is preloaded with the necessary information to kickstart your application or project. It allows you to 
 define and execute seeding functions that insert predefined data into your MongoDB collections, helping you streamline
 the setup process and accelerate development.
@@ -193,8 +193,8 @@ transaction. See [transaction](#transaction)
 
 ### Objects
 
-The `objects` method in the `Session` class facilitates the creation of an `Objects` instance, which allows for 
-querying documents of a specified type within the session context. It provides flexibility in querying documents 
+The `objects()` method in the `Session` class facilitates the creation of an `mongotoy.db.Objects` instance, which allows 
+for querying documents of a specified type within the session context. It provides flexibility in querying documents 
 and supports deep dereferencing when needed. See [objects](/gurcuff91/mongotoy/docs/objects)
 
 ````python
@@ -209,10 +209,9 @@ async with engine.session() as session:
 
 ### Files
 
-The `fs` method in the `Session` class facilitates seamless interaction with GridFS, a MongoDB feature for storing 
-and retrieving large files such as images, videos, and documents. With this method, users can efficiently manage 
-file storage directly within the database, ensuring robust and scalable file handling capabilities.
-See [files](/gurcuff91/mongotoy/docs/files)
+The `fs()` method in the `Session` class facilitates seamless interaction with [GridFS](https://www.mongodb.com/docs/manual/core/gridfs/).
+With this method, you can efficiently manage file storage directly within the database, ensuring robust and scalable 
+file handling capabilities. See [files](/gurcuff91/mongotoy/docs/files)
 
 ````python
 # Open db session
@@ -226,7 +225,7 @@ async with engine.session() as session:
 
 ### Saving documents
 
-The `save` and `save_all` methods in the `Session` class enable the efficient persistence of MongoDB documents 
+The `save()` and `save_all()` methods in the `Session` class enable the efficient persistence of MongoDB documents 
 into the associated database. By invoking these methods, you can seamlessly store individual documents or batches of 
 documents while ensuring data integrity and consistency. This functionality streamlines the process of data storage,
 enhancing the overall efficiency and reliability of database operations.
@@ -248,7 +247,7 @@ associated references, enhancing the integrity and completeness of the data stor
 
 ### Deleting documents
 
-The `delete` and `delete_all` methods in the `Session` class facilitate the removal of documents from the MongoDB 
+The `delete()` and `delete_all()` methods in the `Session` class facilitate the removal of documents from the MongoDB 
 database. These methods provide a convenient way to delete individual documents or multiple documents at once. 
 Additionally, they offer support for cascading deletion, allowing for the removal of associated documents as well.
 This ensures efficient and streamlined data management within MongoDB, empowering users to maintain data integrity

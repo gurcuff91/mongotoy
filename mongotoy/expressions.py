@@ -39,34 +39,34 @@ class Sort(dict[str, Literal[-1, 1] | dict]):
         return f'Sort({super().__repr__()})'
 
     @classmethod
-    def Asc(cls, *args) -> 'Sort':
+    def Asc(cls, *fields) -> 'Sort':
         """
         Utility function to create ascending sort expressions.
 
         Args:
-            *args: Variable number of fields to be sorted in ascending order.
+            *fields: Variable number of fields to be sorted in ascending order.
 
         Returns:
             Sort: Resulting ascending sort expression.
         """
         exp = cls()
-        for field in args:
+        for field in fields:
             exp = exp | cls({str(field): pymongo.ASCENDING})
         return exp
 
     @classmethod
-    def Desc(cls, *args) -> 'Sort':
+    def Desc(cls, *fields) -> 'Sort':
         """
         Utility function to create descending sort expressions.
 
         Args:
-            *args: Variable number of field to be sorted in ascending order.
+            *fields: Variable number of field to be sorted in ascending order.
 
         Returns:
             Sort: Resulting ascending sort expression.
         """
         exp = cls()
-        for field in args:
+        for field in fields:
             exp = exp | cls({str(field): pymongo.DESCENDING})
         return exp
 

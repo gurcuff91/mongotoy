@@ -29,7 +29,7 @@ async with engine.session() as session:
 
 ### Creating documents
 
-The `create` method in the `Objects` class facilitates the creation of new documents within the database. It accepts
+The `create()` method in the `Objects` class facilitates the creation of new documents within the database. It accepts
 keyword arguments representing the data for the document, saves the document to the database using the associated 
 session, and returns the newly created document instance. This method streamlines the process of adding new data to 
 the database by providing a simple and intuitive interface.
@@ -44,7 +44,7 @@ async with engine.session() as session:
 
 ### Filtering documents
 
-The `filter` method in the `Objects` class allows users to specify filter conditions for database queries, facilitating
+The `filter()` method in the `Objects` class allows users to specify filter conditions for database queries, facilitating
 precise data retrieval based on user-defined criteria. It accepts a variable number of filter expressions and keyword 
 arguments. These conditions are then combined with existing filters using logical `AND` operations, ensuring that the 
 resulting query set accurately reflects the specified filtering criteria. 
@@ -55,12 +55,19 @@ See [querying expressions](#querying-expressions)
 async with engine.session() as session:
     
     # Get persons older than 21 years
-    persons = session.objects(Person).filter(Person.age > 21)
+    legal_persons = session.objects(Person).filter(Person.age > 21)
+    
+    # Get persons from USA
+    usa_persons = session.objects(Person).filter(address__country__eq='USA')
 ````
+
+/// note
+The `filter()` method in the `Objects` class accepts all querying forms described in [querying expressions](#querying-expressions)  
+///
 
 ### Sorting documents
 
-The `sort` method in the `Objects` class allows users to specify sorting conditions for database queries, enabling 
+The `sort()` method in the `Objects` class allows users to specify sorting conditions for database queries, enabling 
 ordered data retrieval based on user-defined criteria. It accepts multiple sort expressions as parameters and adds them
 to the query set, ensuring that the result set is sorted accordingly.
 See [filtering expressions](#filtering-expressions)
@@ -73,11 +80,15 @@ async with engine.session() as session:
     persons = session.objects(Person).sort(-Person.dob)
 ````
 
+/// note
+The `sort()` method in the `Objects` class accepts all sorting forms described in [sorting expressions](#sorting-expressions)  
+///
+
 ### Limiting documents
 
-With the `skip` and `limit` functions in the `Objects` class, you can precisely control the pagination of query results.
-By using `skip`, you can specify the number of documents to skip in the result set, allowing you to bypass a certain 
-number of documents before retrieving results. Conversely, the `limit` function lets you define the maximum number of 
+With the `skip()` and `limit()` functions in the `Objects` class, you can precisely control the pagination of query results.
+By using `skip()`, you can specify the number of documents to skip in the result set, allowing you to bypass a certain 
+number of documents before retrieving results. Conversely, the `limit()` function lets you define the maximum number of 
 documents to return in the result set, ensuring that only a specified number of documents are included in the output. 
 These functions provide you with flexibility in navigating through large datasets and retrieving only the necessary
 information, contributing to efficient data retrieval and processing.
@@ -94,7 +105,7 @@ async with engine.session() as session:
 
 The `dereference_deep` property in the Objects class sets the depth of dereferencing for related documents during query
 execution. This allows fine-grained control over how deeply nested documents are retrieved from the database. A value 
-of `-1` indicates full dereferencing, `0` means no dereferencing (**default behavior**), and _positive values_ specify 
+of `-1` indicates full dereferencing, `0` means no dereferencing (**default behavior**), and positive values specify 
 the number of levels to dereference. This property enhances flexibility in handling intricate data structures.
 
 ````python
@@ -130,21 +141,35 @@ async with engine.session() as session:
 
 ### Fetching documents
 
-The `fetch`, `fetch_one`, and `fetch_by_id` functions in the `Objects` class facilitate the retrieval of documents from
-the database result set.
+In Mongotoy, you have several options for fetching documents. The Objects class offers the following methods for 
+retrieving data:
 
-- **fetch**: Asynchronously retrieves all documents in the result set. It returns a list of parsed document instances, 
+- **fetch()**: Asynchronously retrieves all documents in the result set. It returns a list of parsed document instances, 
 enabling comprehensive access to query results for further processing or display.
 
-- **fetch_one**: Asynchronously retrieves a specific document from the result set. It returns a single-parsed document
+- **fetch_one()**: Asynchronously retrieves a specific document from the result set. It returns a single-parsed document
 instance, suitable for scenarios where only one result is expected.
 
-- **fetch_by_id**: Asynchronously retrieves a document by its identifier from the result set. It returns a parsed 
+- **fetch_by_id(value)**: Asynchronously retrieves a document by its identifier from the result set. It returns a parsed 
 document instance corresponding to the provided identifier, allowing for targeted document retrieval based on unique
 identifiers.
 
 These functions contribute to efficient data retrieval and manipulation by leveraging asynchronous operations, 
 ensuring responsiveness and scalability in handling database queries.
+
+````python
+# Open db session
+async with engine.session() as session:
+    
+    # Fetching all persons
+    persons = await session.objects(Person).fetch()
+
+    # Fetching one person
+    person = await session.objects(Person).fetch_one()
+
+    # Fetching one person by id
+    person = await session.objects(Person).fetch_by_id(1)
+````
 
 /// warning | Attention
 The `fetch_one` and `fetch_by_id` functions will raise a `mongotoy.errors.NoResultsError` when no document matches the
@@ -153,7 +178,7 @@ query and a `mongotoy.errors.ManyResultsError` if multiple documents are returne
 
 ### Counting documents
 
-The `count` function in the `Objects` class retrieves the total count of documents that match the specified query 
+The `count()` function in the `Objects` class retrieves the total count of documents that match the specified query 
 criteria. This method executes an asynchronous operation to determine the number of documents in the result set. It 
 provides valuable insight into the size of the dataset returned by the query, enabling efficient management and 
 analysis of data.
@@ -172,8 +197,8 @@ In Mongotoy, you have a variety of options for crafting queries to suit your nee
 using basic operands for simpler operations. Alternatively, you can leverage the [Query class](#the-query-class) to 
 access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
 offers a similar syntax through [Q function](#the-q-function). Additionally, if you prefer to work with raw MongoDB
-queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
-method that best fits your requirements and preferences.
+queries, you have the flexibility to execute them directly through [filter method](#filtering-documents). With these 
+diverse options, you can choose the querying method that best fits your requirements and preferences.
 
 You can construct queries by using Document fields along with Python operands and values, providing an intuitive 
 and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.
@@ -235,15 +260,15 @@ as a convenient interface for generating specific query expressions, tailored pr
 
 Supported methods are:
 
-- **Eq**: Creates an equality query expression
-- **Ne**: Creates a not-equal query expression
-- **Gt**: Creates a greater-than query expression.
-- **Gte**: Creates a greater-than-or-equal query expression.
-- **Lt**: Creates a less-than query expression.
-- **Lte**: Creates a less-than-or-equal query expression.
-- **In**: Creates an 'in' query expression.
-- **Nin**: Creates a 'not in' query expression.
-- **Regex**: Creates a regex query expression.
+- **Eq(field, value)**: Creates an equality query expression
+- **Ne(field, value)**: Creates a not-equal query expression
+- **Gt(field, value)**: Creates a greater-than query expression.
+- **Gte(field, value)**: Creates a greater-than-or-equal query expression.
+- **Lt(field, value)**: Creates a less-than query expression.
+- **Lte(field, value)**: Creates a less-than-or-equal query expression.
+- **In(field, value)**: Creates an 'in' query expression.
+- **Nin(field, value)**: Creates a 'not in' query expression.
+- **Regex(field, value)**: Creates a regex query expression.
 
 ````python
 from mongotoy.expressions import Query
@@ -344,8 +369,8 @@ expressions becomes a breeze, streamlining your sorting operations.
 
 Supported methods are:
 
-- **Asc**: Creates an ascending sort expressions
-- **Desc**: Creates a descending sort expressions
+- **Asc(*fields)**: Creates an ascending sort expressions
+- **Desc(*fields)**: Creates a descending sort expressions
 
 ````python
 from mongotoy.expressions import Sort

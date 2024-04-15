@@ -56,10 +56,10 @@ class Person(Document):
 ### The id field
 
 In Mongotoy, the `id` field is essential in every document, acting as the primary key to ensure unique identification. 
-You can define the id field using the `mongotoy.field()` function, as explained in the 
-[fields section](/gurcuff91/mongotoy/docs/fields). If you create a new document without explicitly
-specifying an `id` field, Mongotoy automatically generates one and assigns a `bson.ObjectId` type to it. 
-This unique identifier simplifies document management and facilitates efficient querying within MongoDB collections.
+You can define the id field using the `mongotoy.field(id_field=True)` as explained in the 
+[fields section](/gurcuff91/mongotoy/docs/fields). If you create a new document without explicitly specifying an `id` field, Mongotoy automatically 
+generates one and assigns a `bson.ObjectId` type to it. This unique identifier simplifies document management and 
+facilitates efficient querying within MongoDB collections.
 
 /// note
 All classes derived from `mongotoy.Document` come with an `id` property, which provides access to the document's ID 
@@ -89,11 +89,19 @@ Configuration params:
 - **write_concern**: The write concern for the document (default is None).
 - **extra_options**: Extra options for the collection creation (default is an empty dictionary).
 
-All of these configurations apply only at the document collection level and do not affect the rest of the 
-database collections.
+These configurations exclusively pertain to the document collection level and do not extend to other collections within 
+the database. To specify settings, you use the `document_config` class attribute in your document definition.
+
+````python
+from mongotoy import Document
+from mongotoy.documents import DocumentConfig
+
+class Person(Document):
+    document_config = DocumentConfig(capped=True)
+````
 
 
-## Defining embedded documents
+### Embedded documents
 
 An _embedded document_ serves as a container for defining complex object types that are nested within other 
 documents. Unlike _documents_, _embedded documents_ do not represent individual collections in the database. 
@@ -126,7 +134,7 @@ However, they don't perform serialization themselves, to fully serialize the dat
 appropriate third-party library.
 ///
 
-### Dump as dict
+### Dict
 The `dump_dict` method converts document data into a Python dictionary format, facilitating integration with
 Python-based workflows and applications. It supports the following customization parameters to tailor the output 
 according to specific requirements.
@@ -135,7 +143,7 @@ according to specific requirements.
 - **exclude_empty**: Exclude fields with empty values from the output. (default is False)
 - **exclude_null**: Exclude fields with null values from the output. (default is False)
 
-### Dump as json
+### Json
 The `dump_json` method export the document data in a format compatible with JSON, facilitating
 interoperability with various systems and services supporting JSON data exchange. It supports the following
 customization parameters to tailor the output according to specific requirements.
@@ -143,7 +151,7 @@ customization parameters to tailor the output according to specific requirements
 - **by_alias**: Dumping by fields aliases. (default is False)
 - **exclude_null**: Exclude fields with null values from the output. (default is False)
 
-### Dump as bson
+### Bson
 The `dump_bson` method export the document data in a format compatible with BSON for seamless interaction 
 with MongoDB database. It supports the following customization parameters to tailor the output 
 according to specific requirements.
