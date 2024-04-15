@@ -380,6 +380,8 @@
       
         
       
+        
+      
     
     
       
@@ -759,6 +761,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync_mode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sync Mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1001,7 +1024,7 @@ object. For instance:</p>
     <span class="n">persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h3 id="creating-documents">Creating documents</h3>
-<p>The <code>create</code> method in the <code>Objects</code> class facilitates the creation of new documents within the database. It accepts
+<p>The <code>create()</code> method in the <code>Objects</code> class facilitates the creation of new documents within the database. It accepts
 keyword arguments representing the data for the document, saves the document to the database using the associated 
 session, and returns the newly created document instance. This method streamlines the process of adding new data to 
 the database by providing a simple and intuitive interface.</p>
@@ -1016,7 +1039,7 @@ the database by providing a simple and intuitive interface.</p>
     <span class="n">persons</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">person_data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h3 id="filtering-documents">Filtering documents</h3>
-<p>The <code>filter</code> method in the <code>Objects</code> class allows users to specify filter conditions for database queries, facilitating
+<p>The <code>filter()</code> method in the <code>Objects</code> class allows users to specify filter conditions for database queries, facilitating
 precise data retrieval based on user-defined criteria. It accepts a variable number of filter expressions and keyword 
 arguments. These conditions are then combined with existing filters using logical <code>AND</code> operations, ensuring that the 
 resulting query set accurately reflects the specified filtering criteria. 
@@ -1025,14 +1048,24 @@ See <a href="#querying-expressions">querying expressions</a></p>
 <span class="normal">2</span>
 <span class="normal">3</span>
 <span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
 <span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
 
     <span class="c1"># Get persons older than 21 years</span>
-    <span class="n">persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&gt;</span> <span class="mi">21</span><span class="p">)</span>
+    <span class="n">legal_persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Person</span><span class="o">.</span><span class="n">age</span> <span class="o">&gt;</span> <span class="mi">21</span><span class="p">)</span>
+
+    <span class="c1"># Get persons from USA</span>
+    <span class="n">usa_persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">address__country__eq</span><span class="o">=</span><span class="s1">&#39;USA&#39;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>filter()</code> method in the <code>Objects</code> class accepts all querying forms described in <a href="#querying-expressions">querying expressions</a>  </p>
+</div>
 <h3 id="sorting-documents">Sorting documents</h3>
-<p>The <code>sort</code> method in the <code>Objects</code> class allows users to specify sorting conditions for database queries, enabling 
+<p>The <code>sort()</code> method in the <code>Objects</code> class allows users to specify sorting conditions for database queries, enabling 
 ordered data retrieval based on user-defined criteria. It accepts multiple sort expressions as parameters and adds them
 to the query set, ensuring that the result set is sorted accordingly.
 See <a href="#filtering-expressions">filtering expressions</a></p>
@@ -1046,10 +1079,14 @@ See <a href="#filtering-expressions">filtering expressions</a></p>
     <span class="c1"># Order persons by dob descending</span>
     <span class="n">persons</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="o">-</span><span class="n">Person</span><span class="o">.</span><span class="n">dob</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>sort()</code> method in the <code>Objects</code> class accepts all sorting forms described in <a href="#sorting-expressions">sorting expressions</a>  </p>
+</div>
 <h3 id="limiting-documents">Limiting documents</h3>
-<p>With the <code>skip</code> and <code>limit</code> functions in the <code>Objects</code> class, you can precisely control the pagination of query results.
-By using <code>skip</code>, you can specify the number of documents to skip in the result set, allowing you to bypass a certain 
-number of documents before retrieving results. Conversely, the <code>limit</code> function lets you define the maximum number of 
+<p>With the <code>skip()</code> and <code>limit()</code> functions in the <code>Objects</code> class, you can precisely control the pagination of query results.
+By using <code>skip()</code>, you can specify the number of documents to skip in the result set, allowing you to bypass a certain 
+number of documents before retrieving results. Conversely, the <code>limit()</code> function lets you define the maximum number of 
 documents to return in the result set, ensuring that only a specified number of documents are included in the output. 
 These functions provide you with flexibility in navigating through large datasets and retrieving only the necessary
 information, contributing to efficient data retrieval and processing.</p>
@@ -1066,7 +1103,7 @@ information, contributing to efficient data retrieval and processing.</p>
 <h3 id="dereferencing-documents">Dereferencing documents</h3>
 <p>The <code>dereference_deep</code> property in the Objects class sets the depth of dereferencing for related documents during query
 execution. This allows fine-grained control over how deeply nested documents are retrieved from the database. A value 
-of <code>-1</code> indicates full dereferencing, <code>0</code> means no dereferencing (<strong>default behavior</strong>), and <em>positive values</em> specify 
+of <code>-1</code> indicates full dereferencing, <code>0</code> means no dereferencing (<strong>default behavior</strong>), and positive values specify 
 the number of levels to dereference. This property enhances flexibility in handling intricate data structures.</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -1109,32 +1146,54 @@ responsive application behavior.</p>
         <span class="nb">print</span><span class="p">(</span><span class="n">person</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h3 id="fetching-documents">Fetching documents</h3>
-<p>The <code>fetch</code>, <code>fetch_one</code>, and <code>fetch_by_id</code> functions in the <code>Objects</code> class facilitate the retrieval of documents from
-the database result set.</p>
+<p>In Mongotoy, you have several options for fetching documents. The Objects class offers the following methods for 
+retrieving data:</p>
 <ul>
 <li>
-<p><strong>fetch</strong>: Asynchronously retrieves all documents in the result set. It returns a list of parsed document instances, 
+<p><strong>fetch()</strong>: Asynchronously retrieves all documents in the result set. It returns a list of parsed document instances, 
 enabling comprehensive access to query results for further processing or display.</p>
 </li>
 <li>
-<p><strong>fetch_one</strong>: Asynchronously retrieves a specific document from the result set. It returns a single-parsed document
+<p><strong>fetch_one()</strong>: Asynchronously retrieves a specific document from the result set. It returns a single-parsed document
 instance, suitable for scenarios where only one result is expected.</p>
 </li>
 <li>
-<p><strong>fetch_by_id</strong>: Asynchronously retrieves a document by its identifier from the result set. It returns a parsed 
+<p><strong>fetch_by_id(value)</strong>: Asynchronously retrieves a document by its identifier from the result set. It returns a parsed 
 document instance corresponding to the provided identifier, allowing for targeted document retrieval based on unique
 identifiers.</p>
 </li>
 </ul>
 <p>These functions contribute to efficient data retrieval and manipulation by leveraging asynchronous operations, 
 ensuring responsiveness and scalability in handling database queries.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Open db session</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+
+    <span class="c1"># Fetching all persons</span>
+    <span class="n">persons</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+
+    <span class="c1"># Fetching one person</span>
+    <span class="n">person</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">fetch_one</span><span class="p">()</span>
+
+    <span class="c1"># Fetching one person by id</span>
+    <span class="n">person</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">objects</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span><span class="o">.</span><span class="n">fetch_by_id</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
 <div class="admonition warning">
 <p class="admonition-title">Attention</p>
 <p>The <code>fetch_one</code> and <code>fetch_by_id</code> functions will raise a <code>mongotoy.errors.NoResultsError</code> when no document matches the
 query and a <code>mongotoy.errors.ManyResultsError</code> if multiple documents are returned unexpectedly.</p>
 </div>
 <h3 id="counting-documents">Counting documents</h3>
-<p>The <code>count</code> function in the <code>Objects</code> class retrieves the total count of documents that match the specified query 
+<p>The <code>count()</code> function in the <code>Objects</code> class retrieves the total count of documents that match the specified query 
 criteria. This method executes an asynchronous operation to determine the number of documents in the result set. It 
 provides valuable insight into the size of the dataset returned by the query, enabling efficient management and 
 analysis of data.</p>
@@ -1153,8 +1212,8 @@ analysis of data.</p>
 using basic operands for simpler operations. Alternatively, you can leverage the <a href="#the-query-class">Query class</a> to 
 access a comprehensive range of supported operands. If you're familiar with Django's querying style, Mongotoy also 
 offers a similar syntax through <a href="#the-q-function">Q function</a>. Additionally, if you prefer to work with raw MongoDB
-queries, you have the flexibility to execute them directly. With these diverse options, you can choose the querying 
-method that best fits your requirements and preferences.</p>
+queries, you have the flexibility to execute them directly through <a href="#filtering-documents">filter method</a>. With these 
+diverse options, you can choose the querying method that best fits your requirements and preferences.</p>
 <p>You can construct queries by using Document fields along with Python operands and values, providing an intuitive 
 and Pythonic approach. This method allows you to express basic operations with ease, making it ideal for simple queries.</p>
 <p>Supported operand are:</p>
@@ -1212,15 +1271,15 @@ It offers an array of methods for creating comparisons, enabling the crafting of
 as a convenient interface for generating specific query expressions, tailored precisely to your requirements.</p>
 <p>Supported methods are:</p>
 <ul>
-<li><strong>Eq</strong>: Creates an equality query expression</li>
-<li><strong>Ne</strong>: Creates a not-equal query expression</li>
-<li><strong>Gt</strong>: Creates a greater-than query expression.</li>
-<li><strong>Gte</strong>: Creates a greater-than-or-equal query expression.</li>
-<li><strong>Lt</strong>: Creates a less-than query expression.</li>
-<li><strong>Lte</strong>: Creates a less-than-or-equal query expression.</li>
-<li><strong>In</strong>: Creates an 'in' query expression.</li>
-<li><strong>Nin</strong>: Creates a 'not in' query expression.</li>
-<li><strong>Regex</strong>: Creates a regex query expression.</li>
+<li><strong>Eq(field, value)</strong>: Creates an equality query expression</li>
+<li><strong>Ne(field, value)</strong>: Creates a not-equal query expression</li>
+<li><strong>Gt(field, value)</strong>: Creates a greater-than query expression.</li>
+<li><strong>Gte(field, value)</strong>: Creates a greater-than-or-equal query expression.</li>
+<li><strong>Lt(field, value)</strong>: Creates a less-than query expression.</li>
+<li><strong>Lte(field, value)</strong>: Creates a less-than-or-equal query expression.</li>
+<li><strong>In(field, value)</strong>: Creates an 'in' query expression.</li>
+<li><strong>Nin(field, value)</strong>: Creates a 'not in' query expression.</li>
+<li><strong>Regex(field, value)</strong>: Creates a regex query expression.</li>
 </ul>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
@@ -1332,8 +1391,8 @@ With clear representations and handy utility methods at your disposal, generatin
 expressions becomes a breeze, streamlining your sorting operations.</p>
 <p>Supported methods are:</p>
 <ul>
-<li><strong>Asc</strong>: Creates an ascending sort expressions</li>
-<li><strong>Desc</strong>: Creates a descending sort expressions</li>
+<li><strong>Asc(*fields)</strong>: Creates an ascending sort expressions</li>
+<li><strong>Desc(*fields)</strong>: Creates a descending sort expressions</li>
 </ul>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>

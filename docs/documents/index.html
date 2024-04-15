@@ -380,6 +380,8 @@
       
         
       
+        
+      
     
     
       
@@ -499,17 +501,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#defining-embedded-documents" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#embedded-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Defining embedded documents
+      Embedded documents
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -524,27 +526,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dump-as-dict" class="md-nav__link">
+  <a href="#dict" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as dict
+      Dict
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#dump-as-json" class="md-nav__link">
+  <a href="#json" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as json
+      Json
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#dump-as-bson" class="md-nav__link">
+  <a href="#bson" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as bson
+      Bson
     </span>
   </a>
   
@@ -690,6 +692,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync_mode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sync Mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -758,17 +781,17 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#defining-embedded-documents" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#embedded-documents" class="md-nav__link">
     <span class="md-ellipsis">
-      Defining embedded documents
+      Embedded documents
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -783,27 +806,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dump-as-dict" class="md-nav__link">
+  <a href="#dict" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as dict
+      Dict
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#dump-as-json" class="md-nav__link">
+  <a href="#json" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as json
+      Json
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#dump-as-bson" class="md-nav__link">
+  <a href="#bson" class="md-nav__link">
     <span class="md-ellipsis">
-      Dump as bson
+      Bson
     </span>
   </a>
   
@@ -893,10 +916,10 @@ case, the collection name will be <code>persons</code>. </p>
 </code></pre></div></td></tr></table></div>
 <h3 id="the-id-field">The id field</h3>
 <p>In Mongotoy, the <code>id</code> field is essential in every document, acting as the primary key to ensure unique identification. 
-You can define the id field using the <code>mongotoy.field()</code> function, as explained in the 
-<a href="/gurcuff91/mongotoy/docs/fields">fields section</a>. If you create a new document without explicitly
-specifying an <code>id</code> field, Mongotoy automatically generates one and assigns a <code>bson.ObjectId</code> type to it. 
-This unique identifier simplifies document management and facilitates efficient querying within MongoDB collections.</p>
+You can define the id field using the <code>mongotoy.field(id_field=True)</code> as explained in the 
+<a href="/gurcuff91/mongotoy/docs/fields">fields section</a>. If you create a new document without explicitly specifying an <code>id</code> field, Mongotoy automatically 
+generates one and assigns a <code>bson.ObjectId</code> type to it. This unique identifier simplifies document management and 
+facilitates efficient querying within MongoDB collections.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>All classes derived from <code>mongotoy.Document</code> come with an <code>id</code> property, which provides access to the document's ID 
@@ -923,9 +946,19 @@ MongoDB collection options.</p>
 <li><strong>write_concern</strong>: The write concern for the document (default is None).</li>
 <li><strong>extra_options</strong>: Extra options for the collection creation (default is an empty dictionary).</li>
 </ul>
-<p>All of these configurations apply only at the document collection level and do not affect the rest of the 
-database collections.</p>
-<h2 id="defining-embedded-documents">Defining embedded documents</h2>
+<p>These configurations exclusively pertain to the document collection level and do not extend to other collections within 
+the database. To specify settings, you use the <code>document_config</code> class attribute in your document definition.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">mongotoy</span> <span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span> <span class="nn">mongotoy.documents</span> <span class="kn">import</span> <span class="n">DocumentConfig</span>
+
+<span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="n">Document</span><span class="p">):</span>
+    <span class="n">document_config</span> <span class="o">=</span> <span class="n">DocumentConfig</span><span class="p">(</span><span class="n">capped</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="embedded-documents">Embedded documents</h3>
 <p>An <em>embedded document</em> serves as a container for defining complex object types that are nested within other 
 documents. Unlike <em>documents</em>, <em>embedded documents</em> do not represent individual collections in the database. 
 Instead, they are used to encapsulate related data fields within a parent document, allowing for more structured and 
@@ -958,7 +991,7 @@ appropriate format based on needs and integration requirements.</p>
 However, they don't perform serialization themselves, to fully serialize the data you'll need to use an 
 appropriate third-party library.</p>
 </div>
-<h3 id="dump-as-dict">Dump as dict</h3>
+<h3 id="dict">Dict</h3>
 <p>The <code>dump_dict</code> method converts document data into a Python dictionary format, facilitating integration with
 Python-based workflows and applications. It supports the following customization parameters to tailor the output 
 according to specific requirements.</p>
@@ -967,7 +1000,7 @@ according to specific requirements.</p>
 <li><strong>exclude_empty</strong>: Exclude fields with empty values from the output. (default is False)</li>
 <li><strong>exclude_null</strong>: Exclude fields with null values from the output. (default is False)</li>
 </ul>
-<h3 id="dump-as-json">Dump as json</h3>
+<h3 id="json">Json</h3>
 <p>The <code>dump_json</code> method export the document data in a format compatible with JSON, facilitating
 interoperability with various systems and services supporting JSON data exchange. It supports the following
 customization parameters to tailor the output according to specific requirements.</p>
@@ -975,7 +1008,7 @@ customization parameters to tailor the output according to specific requirements
 <li><strong>by_alias</strong>: Dumping by fields aliases. (default is False)</li>
 <li><strong>exclude_null</strong>: Exclude fields with null values from the output. (default is False)</li>
 </ul>
-<h3 id="dump-as-bson">Dump as bson</h3>
+<h3 id="bson">Bson</h3>
 <p>The <code>dump_bson</code> method export the document data in a format compatible with BSON for seamless interaction 
 with MongoDB database. It supports the following customization parameters to tailor the output 
 according to specific requirements.</p>

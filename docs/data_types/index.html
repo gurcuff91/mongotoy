@@ -380,6 +380,8 @@
       
         
       
+        
+      
     
     
       
@@ -494,18 +496,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-built-in-python-types" class="md-nav__link">
+  <a href="#supported-built-in-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported built-in Python types
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#supported-bson-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Supported bson types
+      Supported built-in types
     </span>
   </a>
   
@@ -521,9 +514,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#supported-custom-types" class="md-nav__link">
+  <a href="#supported-bson-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported custom types
+      Supported bson types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom types
     </span>
   </a>
   
@@ -532,7 +534,7 @@
           <li class="md-nav__item">
   <a href="#using-nullable-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Nullable types
+      Using nullable types
     </span>
   </a>
   
@@ -541,17 +543,17 @@
           <li class="md-nav__item">
   <a href="#using-documents-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Documents types
+      Using documents types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Using Documents types">
+    <nav class="md-nav" aria-label="Using documents types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#forwarding-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Forwarding Types
+      Forwarding types
     </span>
   </a>
   
@@ -681,6 +683,27 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sync_mode/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sync Mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -723,18 +746,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-built-in-python-types" class="md-nav__link">
+  <a href="#supported-built-in-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported built-in Python types
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#supported-bson-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Supported bson types
+      Supported built-in types
     </span>
   </a>
   
@@ -750,9 +764,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#supported-custom-types" class="md-nav__link">
+  <a href="#supported-bson-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported custom types
+      Supported bson types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom types
     </span>
   </a>
   
@@ -761,7 +784,7 @@
           <li class="md-nav__item">
   <a href="#using-nullable-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Nullable types
+      Using nullable types
     </span>
   </a>
   
@@ -770,17 +793,17 @@
           <li class="md-nav__item">
   <a href="#using-documents-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Using Documents types
+      Using documents types
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Using Documents types">
+    <nav class="md-nav" aria-label="Using documents types">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#forwarding-types" class="md-nav__link">
     <span class="md-ellipsis">
-      Forwarding Types
+      Forwarding types
     </span>
   </a>
   
@@ -828,7 +851,7 @@
 <h2 id="supported-data-types">Supported Data Types</h2>
 <p>Mongotoy supports a wide range of data types, encompassing both common built-in Python types and custom types 
 tailored to specific use cases. </p>
-<h4 id="supported-built-in-python-types">Supported built-in Python types</h4>
+<h4 id="supported-built-in-types">Supported built-in types</h4>
 <ul>
 <li><code>str</code></li>
 <li><code>bool</code></li>
@@ -841,17 +864,17 @@ tailored to specific use cases. </p>
 <li><code>datetime.time</code></li>
 <li><code>uuid.UUID</code></li>
 </ul>
-<h4 id="supported-bson-types">Supported bson types</h4>
-<ul>
-<li><code>bson.ObjectId</code></li>
-</ul>
 <h4 id="supported-sequence-types">Supported sequence types</h4>
 <ul>
 <li><code>list</code></li>
 <li><code>tuple</code></li>
 <li><code>set</code></li>
 </ul>
-<h4 id="supported-custom-types">Supported custom types</h4>
+<h4 id="supported-bson-types">Supported bson types</h4>
+<ul>
+<li><code>bson.ObjectId</code></li>
+</ul>
+<h4 id="custom-types">Custom types</h4>
 <ul>
 <li><code>mogotoy.types.IpV4</code>: Represents an IPv4 address.</li>
 <li><code>mogotoy.types.IpV6</code>: Represents an IPv6 address.</li>
@@ -875,9 +898,9 @@ tailored to specific use cases. </p>
 <li><code>mogotoy.types.Bson</code>: Represents a valid bson data.</li>
 <li><code>mogotoy.types.File</code>: Represents a Grid-FS object.</li>
 </ul>
-<p>You can effortlessly utilize these data types within your documents, and Mongotoy will take care of automatic 
-field creation and validation.</p>
-<h3 id="using-nullable-types">Using Nullable types</h3>
+<p>You can effortlessly use these data types within your documents, and Mongotoy will take care of automatic field creation
+and validation.</p>
+<h3 id="using-nullable-types">Using nullable types</h3>
 <p>By default, Mongotoy does not permit <code>null</code> data. However, you can specify nullability using <code>typing.Optional</code>. 
 Below is an example of a Person document that allows <code>null</code> data:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
@@ -898,7 +921,7 @@ Below is an example of a Person document that allows <code>null</code> data:</p>
     <span class="n">age</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
     <span class="n">dob</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="using-documents-types">Using Documents types</h3>
+<h3 id="using-documents-types">Using documents types</h3>
 <p>Mongotoy facilitates the integration of other documents as types within documents, offering a flexible approach 
 to defining complex data structures. This means you can use instances of other Mongotoy document classes as 
 attribute types within your own document classes. By incorporating related documents as types, you can establish 
@@ -981,10 +1004,10 @@ See <a href="/gurcuff91/mongotoy/docs/references">references</a></p>
 <p class="admonition-title">Note</p>
 <p>The only difference is the base class of the <code>Address</code> document.</p>
 </div>
-<h4 id="forwarding-types">Forwarding Types</h4>
+<h4 id="forwarding-types">Forwarding types</h4>
 <p>Mongotoy facilitates the utilization of document types as <a href="https://peps.python.org/pep-0563/#forward-references">forward dependencies</a>, 
 enabling the use of document types that may not have been created yet or are defined in different modules.
-This feature supports self-referential document type as well.</p>
+This feature supports a self-referential document type as well.</p>
 <p>Here's an example demonstrating the use of a self-referential document type:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
