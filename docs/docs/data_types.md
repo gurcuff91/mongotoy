@@ -34,6 +34,10 @@ tailored to specific use cases.
 #### Supported bson types
 
 - `bson.ObjectId`
+- `bson.Int64`
+- `bson.Decimal128`
+- `bson.Regex`
+- `bson.Code`
 
 #### Custom types
 

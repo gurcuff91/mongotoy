@@ -322,9 +322,9 @@ class SequenceMapper(Mapper):
 
         """
         self._mapper = mapper
-        # SequenceMapper must be at least empty list not an EmptyValue for ReferencedDocumentMapper
+        # SequenceMapper must be a least an empty sequence not an EmptyValue for ReferencedDocumentMapper
         if options.default is expressions.EmptyValue and isinstance(self.unwrap(), ReferencedDocumentMapper):
-            options.default = []
+            options.default = self.__bind__()
         super().__init__(options)
 
     @property
@@ -603,48 +603,6 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         return getattr(value, self.ref_field.name)
 
 
-class ListMapper(SequenceMapper, bind=list):
-    """
-    Mapper for handling lists.
-
-    Inherits from ManyMapper and specifies 'list' as the binding type.
-
-    """
-
-
-class TupleMapper(SequenceMapper, bind=tuple):
-    """
-    Mapper for handling tuples.
-
-    Inherits from ManyMapper and specifies 'tuple' as the binding type.
-
-    """
-    def validate(self, value) -> typing.Any:
-        if isinstance(value, list):
-            value = tuple(value)
-        return super().validate(value)
-
-
-class SetMapper(SequenceMapper, bind=set):
-    """
-    Mapper for handling sets.
-
-    Inherits from ManyMapper and specifies 'set' as the binding type.
-
-    """
-
-    def validate(self, value) -> typing.Any:
-        if isinstance(value, list):
-            value = set(value)
-        return super().validate(value)
-
-    def dump_json(self, value, **options) -> typing.Any:
-        return list(value)
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        return list(value)
-
-
 class StrMapper(Mapper, bind=str):
     """
     Mapper for handling string values.
@@ -686,145 +644,6 @@ class StrMapper(Mapper, bind=str):
                     )
 
         return value
-
-
-class BoolMapper(Mapper, bind=bool):
-    """
-    Mapper for handling boolean values.
-    """
-
-    def validate(self, value) -> typing.Any:
-        """
-        Validate the boolean value.
-
-        Args:
-            value: The value to be validated.
-
-        Returns:
-            Any: The validated value.
-
-        Raises:
-            TypeError: If validation fails due to incorrect data type.
-
-        """
-        if not isinstance(value, bool):
-            raise TypeError(f'Invalid data type {type(value)}, required is {bool}')
-        return value
-
-
-class BinaryMapper(Mapper, bind=bytes):
-    """
-    Mapper for handling binary values.
-    """
-
-    def validate(self, value) -> typing.Any:
-        """
-        Validate the binary value.
-
-        Args:
-            value: The value to be validated.
-
-        Returns:
-            Any: The validated value.
-
-        Raises:
-            TypeError: If validation fails due to incorrect data type.
-
-        """
-        if not isinstance(value, bytes):
-            raise TypeError(f'Invalid data type {type(value)}, required is {bytes}')
-        return value
-
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Dump the binary value to a JSON-serializable format.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        import base64
-        return base64.b64encode(value).decode()
-
-
-class ObjectIdMapper(Mapper, bind=bson.ObjectId):
-    """
-    Mapper for handling BSON ObjectId values.
-    """
-
-    def validate(self, value) -> typing.Any:
-        """
-        Validate the ObjectId value.
-
-        Args:
-            value: The value to be validated.
-
-        Returns:
-            Any: The validated value.
-
-        Raises:
-            TypeError: If validation fails due to incorrect data type.
-
-        """
-        if not bson.ObjectId.is_valid(value):
-            raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
-        return bson.ObjectId(value)
-
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Dump the ObjectId value to a JSON-serializable format.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return str(value)
-
-
-class UUIDMapper(Mapper, bind=uuid.UUID):
-    """
-    Mapper for handling UUID values.
-    """
-
-    def validate(self, value) -> typing.Any:
-        """
-        Validate the UUID value.
-
-        Args:
-            value: The value to be validated.
-
-        Returns:
-            Any: The validated value.
-
-        Raises:
-            TypeError: If validation fails due to incorrect data type.
-
-        """
-        if not isinstance(value, uuid.UUID):
-            raise TypeError(f'Invalid data type {type(value)}, required is {uuid.UUID}')
-        return value
-
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Dump the UUID value to a JSON-serializable format.
-
-        Args:
-            value: The value to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return str(value)
 
 
 class IntMapper(ComparableMapper, bind=int):
@@ -893,6 +712,107 @@ class DecimalMapper(ComparableMapper, bind=decimal.Decimal):
 
         """
         return bson.Decimal128(value)
+
+
+class BoolMapper(Mapper, bind=bool):
+    """
+    Mapper for handling boolean values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the boolean value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bool):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bool}')
+        return value
+
+
+class BinaryMapper(Mapper, bind=bytes):
+    """
+    Mapper for handling binary values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the binary value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bytes):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bytes}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the binary value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        import base64
+        return base64.b64encode(value).decode()
+
+
+class UUIDMapper(Mapper, bind=uuid.UUID):
+    """
+    Mapper for handling UUID values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the UUID value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, uuid.UUID):
+            raise TypeError(f'Invalid data type {type(value)}, required is {uuid.UUID}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the UUID value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return str(value)
 
 
 class DateTimeMapper(ComparableMapper, bind=datetime.datetime):
@@ -1017,6 +937,238 @@ class TimeMapper(ComparableMapper, bind=datetime.time):
 
         """
         return datetime.datetime.combine(date=datetime.datetime.min, time=value)
+
+
+class ListMapper(SequenceMapper, bind=list):
+    """
+    Mapper for handling lists.
+
+    Inherits from ManyMapper and specifies 'list' as the binding type.
+
+    """
+
+
+class TupleMapper(SequenceMapper, bind=tuple):
+    """
+    Mapper for handling tuples.
+
+    Inherits from ManyMapper and specifies 'tuple' as the binding type.
+
+    """
+    def validate(self, value) -> typing.Any:
+        if isinstance(value, list):
+            value = tuple(value)
+        return super().validate(value)
+
+
+class SetMapper(SequenceMapper, bind=set):
+    """
+    Mapper for handling sets.
+
+    Inherits from ManyMapper and specifies 'set' as the binding type.
+
+    """
+
+    def validate(self, value) -> typing.Any:
+        if isinstance(value, list):
+            value = set(value)
+        return super().validate(value)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        return list(value)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        return list(value)
+
+
+class ObjectIdMapper(Mapper, bind=bson.ObjectId):
+    """
+    Mapper for handling BSON ObjectId values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the ObjectId value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not bson.ObjectId.is_valid(value):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
+        return bson.ObjectId(value)
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the ObjectId value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return str(value)
+
+
+class Int64Mapper(Mapper, bind=bson.Int64):
+    """
+    Mapper for handling BSON Int64 values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the Int64 value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bson.Int64):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bson.Int64}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the Int64 value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return int(value)
+
+
+class Decimal128Mapper(Mapper, bind=bson.Decimal128):
+    """
+    Mapper for handling BSON Decimal128 values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the Decimal128 value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bson.Decimal128):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bson.Decimal128}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the Decimal128 value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return float(value.to_decimal())
+
+
+class RegexMapper(Mapper, bind=bson.Regex):
+    """
+    Mapper for handling BSON Regex values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the Regex value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bson.Regex):
+            value = bson.Regex.from_native(value)
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the Regex value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return f'{value.pattern}'
+
+
+class CodeMapper(Mapper, bind=bson.Code):
+    """
+    Mapper for handling BSON Code values.
+    """
+
+    def validate(self, value) -> typing.Any:
+        """
+        Validate the Code value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            TypeError: If validation fails due to incorrect data type.
+
+        """
+        if not isinstance(value, bson.Code):
+            raise TypeError(f'Invalid data type {type(value)}, required is {bson.Code}')
+        return value
+
+    def dump_json(self, value, **options) -> typing.Any:
+        """
+        Dump the Decimal128 value to a JSON-serializable format.
+
+        Args:
+            value: The value to be dumped.
+            **options: Additional options.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return str(value)
 
 
 class ConstrainedStrMapper(StrMapper):
@@ -1262,32 +1414,6 @@ class JsonMapper(Mapper, bind=types.Json):
 
         return types.Json(value)
 
-    def dump_json(self, value, **options) -> typing.Any:
-        """
-        Dump the JSON data to JSON.
-
-        Args:
-            value: The JSON data to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped JSON data.
-        """
-        return dict(value)
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        """
-        Dump the JSON data to BSON.
-
-        Args:
-            value: The JSON data to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped JSON data.
-        """
-        return dict(value)
-
 
 class BsonMapper(Mapper, bind=types.Bson):
     """
@@ -1330,28 +1456,11 @@ class BsonMapper(Mapper, bind=types.Bson):
             **options: Additional options.
 
         Returns:
-            Any: The dumped BSON data.
-
-        Raises:
-            NotImplementedError: As BSON data cannot be directly dumped to JSON.
+            Any: The dumped JSON data.
         """
-        # noinspection SpellCheckingInspection
-        raise NotImplementedError(
-            'mongotoy.types.Bson does not implement dump_json; use mongotoy.types.Json instead'
-        )
-
-    def dump_bson(self, value, **options) -> typing.Any:
-        """
-        Dump the BSON data to BSON.
-
-        Args:
-            value: The BSON data to be dumped.
-            **options: Additional options.
-
-        Returns:
-            Any: The dumped BSON data.
-        """
-        return bson.SON(value)
+        from bson import json_util
+        # noinspection PyProtectedMember
+        return json_util._json_convert(value, json_options=json_util.RELAXED_JSON_OPTIONS)
 
 
 class FileMapper(ReferencedDocumentMapper, bind=types.File):

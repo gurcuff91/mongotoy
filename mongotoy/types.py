@@ -23,10 +23,12 @@ class IpV4(collections.UserString):
         ValueError: If the value is not a valid IPv4 address.
     """
 
+    _regex = re.compile(
+        r'(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'(\b25[0-5]|\b2[0-4][0-9]|\b[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid IPv4 address')
         super().__init__(value)
 
@@ -42,18 +44,20 @@ class IpV6(collections.UserString):
         ValueError: If the value is not a valid IPv6 address.
     """
 
+    # noinspection RegExpSimplifiable
+    _regex = re.compile(
+        r'(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:)'
+        r'{1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:)'
+        r'{1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]'
+        r'{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]'
+        r'{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}'
+        r'((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|'
+        r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|'
+        r'1{0,1}[0-9]){0,1}[0-9]))'
+    )
+
     def __init__(self, value):
-        # noinspection RegExpSimplifiable
-        if not re.compile(
-            r'(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:)'
-            r'{1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:)'
-            r'{1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]'
-            r'{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]'
-            r'{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}'
-            r'((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|'
-            r'([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|'
-            r'1{0,1}[0-9]){0,1}[0-9]))'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid IPv6 address')
         super().__init__(value)
 
@@ -69,11 +73,13 @@ class Port(collections.UserString):
         ValueError: If the value is not a valid port number.
     """
 
+    _regex = re.compile(
+        r'^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|'
+        r'([0-9]{1,4}))$'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|'
-            r'([0-9]{1,4}))$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid port number')
         super().__init__(value)
 
@@ -89,10 +95,12 @@ class Mac(collections.UserString):
         ValueError: If the value is not a valid MAC address.
     """
 
+    _regex = re.compile(
+        r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid MAC address')
         super().__init__(value)
 
@@ -108,11 +116,13 @@ class Phone(collections.UserString):
         ValueError: If the value is not a valid phone number.
     """
 
+    # noinspection RegExpRedundantEscape,RegExpSimplifiable
+    _regex = re.compile(
+        r'^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$'
+    )
+
     def __init__(self, value):
-        # noinspection RegExpRedundantEscape,RegExpSimplifiable
-        if not re.compile(
-            r'^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid phone number')
         super().__init__(value)
 
@@ -128,12 +138,14 @@ class Email(collections.UserString):
         ValueError: If the value is not a valid email address.
     """
 
+    _regex = re.compile(
+        r'(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|'
+        r'(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]'
+        r'{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|'
-            r'(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]'
-            r'{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid email address')
         super().__init__(value)
 
@@ -149,13 +161,15 @@ class Card(collections.UserString):
         ValueError: If the value is not a valid credit card number.
     """
 
+    _regex = re.compile(
+        r'(^4[0-9]{12}(?:[0-9]{3})?$)|(^(?:5[1-5][0-9]{2}|222[1-9]|22'
+        r'[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}$)|(3[47][0-9]'
+        r'{13})|(^3(?:0[0-5]|[68][0-9])[0-9]{11}$)|(^6(?:011|5[0-9]{2})[0-9]'
+        r'{12}$)|(^(?:2131|1800|35\d{3})\d{11}$)'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'(^4[0-9]{12}(?:[0-9]{3})?$)|(^(?:5[1-5][0-9]{2}|222[1-9]|22'
-            r'[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}$)|(3[47][0-9]'
-            r'{13})|(^3(?:0[0-5]|[68][0-9])[0-9]{11}$)|(^6(?:011|5[0-9]{2})[0-9]'
-            r'{12}$)|(^(?:2131|1800|35\d{3})\d{11}$)'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid credit card number')
         super().__init__(value)
 
@@ -171,10 +185,12 @@ class Ssn(collections.UserString):
         ValueError: If the value is not a valid SSN.
     """
 
+    _regex = re.compile(
+        r'^(?!0{3})(?!6{3})[0-8]\d{2}-(?!0{2})\d{2}-(?!0{4})\d{4}$'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'^(?!0{3})(?!6{3})[0-8]\d{2}-(?!0{2})\d{2}-(?!0{4})\d{4}$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid SSN')
         super().__init__(value)
 
@@ -190,10 +206,12 @@ class Hashtag(collections.UserString):
         ValueError: If the value is not a valid hashtag.
     """
 
+    _regex = re.compile(
+        r'^#[^ !@#$%^&*(),.?":{}|<>]*$'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'^#[^ !@#$%^&*(),.?":{}|<>]*$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid hashtag')
         super().__init__(value)
 
@@ -209,11 +227,13 @@ class Doi(collections.UserString):
         ValueError: If the value is not a valid DOI.
     """
 
+    # noinspection RegExpRedundantEscape,RegExpSimplifiable
+    _regex = re.compile(
+        r'^(10\.\d{4,5}\/[\S]+[^;,.\s])$'
+    )
+
     def __init__(self, value):
-        # noinspection RegExpRedundantEscape,RegExpSimplifiable
-        if not re.compile(
-            r'^(10\.\d{4,5}\/[\S]+[^;,.\s])$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid DOI')
         super().__init__(value)
 
@@ -229,12 +249,14 @@ class Url(collections.UserString):
         ValueError: If the value is not a valid URL.
     """
 
+    # noinspection RegExpDuplicateCharacterInClass,RegExpRedundantEscape
+    _regex = re.compile(
+        r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b'
+        r'([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)'
+    )
+
     def __init__(self, value):
-        # noinspection RegExpDuplicateCharacterInClass,RegExpRedundantEscape
-        if not re.compile(
-            r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b'
-            r'([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid URL')
         super().__init__(value)
 
@@ -250,12 +272,14 @@ class Version(collections.UserString):
         ValueError: If the value is not a valid Semantic Version Number.
     """
 
+    _regex = re.compile(
+        r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-]'
+        r'[0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+'
+        r'([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+    )
+
     def __init__(self, value):
-        if not re.compile(
-            r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-]'
-            r'[0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+'
-            r'([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
-        ).fullmatch(value):
+        if not self._regex.fullmatch(value):
             raise ValueError(f'Value {value} is not a valid Semantic Version Number')
         super().__init__(value)
 
@@ -413,4 +437,3 @@ class FileStream(typing.Protocol):
 
     def readline(self, size: int = -1) -> typing.Coroutine[typing.Any, typing.Any, bytes] | bytes:
         pass
-

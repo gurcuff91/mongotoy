@@ -463,7 +463,7 @@ class Engine:
         return self._connect(*conn, ping)
 
     @sync.proxy
-    async def migrate(
+    def migrate(
         self,
         document_cls: typing.Type[T],
         session: 'Session' = None
@@ -1340,7 +1340,7 @@ class FsObject(documents.Document):
         self,
         fs: FsBucket,
         dest: typing.IO,
-        revision: int = None
+        revision: int = 0
     ) -> typing.Coroutine[typing.Any, typing.Any, None] | None:
         return self._download_to(fs, dest, revision)
 
@@ -1348,7 +1348,7 @@ class FsObject(documents.Document):
     def stream(
         self,
         fs: FsBucket,
-        revision: int = None
+        revision: int = 0
     ) -> typing.Union[typing.Coroutine[typing.Any, typing.Any, 'FsObjectStream'], 'FsObjectStream']:
         return self._stream(fs, revision)
 
