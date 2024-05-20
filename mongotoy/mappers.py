@@ -33,14 +33,14 @@ class MapperOptions:
         default_factory (Callable[[], Any] | None): Factory function to generate default values. Defaults to None.
         ref_field (str): Field name to use as a reference. Defaults to None.
         key_name (str): Name of the key when using a reference. Defaults to None.
-        extra (dict): Extra options for customization. Defaults to None.
+        extra (dict): Extra options for customization. Defaults to empty dict.
     """
     nullable: bool = dataclasses.field(default=False)
     default: typing.Any = dataclasses.field(default=expressions.EmptyValue)
     default_factory: typing.Callable[[], typing.Any] | None = dataclasses.field(default=None)
     ref_field: str = dataclasses.field(default=None)
     key_name: str = dataclasses.field(default=None)
-    extra: dict = dataclasses.field(default=None)
+    extra: dict = dataclasses.field(default_factory=dict)
 
 
 def build_mapper(mapper_bind: typing.Type, options: MapperOptions) -> 'Mapper':
