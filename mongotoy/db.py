@@ -997,7 +997,7 @@ class Objects(typing.Generic[T]):
         """
         # noinspection PyProtectedMember
         return await self.filter(
-            self._document_cls.id == self._document_cls.id._field.mapper.validate(value)
+            self._document_cls.id == self._document_cls.id._field.mapper.__validate_value__(value)
         )._fetch_one()
 
     async def _count(self) -> int:

@@ -172,7 +172,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def __call__(self, value) -> typing.Any:
         """
-        Validate the value against the mapper.
+        Validate the value.
 
         Args:
             value (Any): The value to be validated.
@@ -195,16 +195,16 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
                     raise ValueError('Null value not allowed')
                 return value
 
-            value = self.validate(value)
+            value = self.__validate_value__(value)
         except (TypeError, ValueError) as e:
             raise ValidationError(errors=[ErrorWrapper(loc=tuple(), error=e)]) from None
 
         return value
 
     @abc.abstractmethod
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
-        Validate the value.
+        Abstract validator to be implemented in child mappers.
 
         Args:
             value: The value to be validated.
@@ -214,6 +214,19 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
         """
         raise NotImplementedError
+
+    def dump_value(self, value) -> typing.Any:
+        """
+        Dump the value to be access direct from object instance.
+
+        Args:
+            value: The value to be dumped.
+
+        Returns:
+            Any: The dumped value.
+
+        """
+        return value
 
     def dump_dict(self, value, **options) -> typing.Any:
         """
@@ -227,7 +240,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
             Any: The dumped value.
 
         """
-        return value
+        return self.dump_value(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -267,7 +280,7 @@ class ComparableMapper(Mapper):
     - gte (greater than or equal to)
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the input value against the specified comparators.
         Args:
@@ -346,7 +359,7 @@ class SequenceMapper(Mapper):
         return mapper_
 
     # noinspection PyTypeChecker
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the list value.
 
@@ -390,7 +403,7 @@ class SequenceMapper(Mapper):
 
     def dump_dict(self, value, **options) -> typing.Any:
         """
-        Dump the list value to a dictionary.
+        Dump the list value to be in a dictionary.
 
         Args:
             value: The list value to be dumped.
@@ -462,7 +475,7 @@ class EmbeddedDocumentMapper(Mapper):
         from mongotoy import documents
         return documents.get_embedded_document_cls(self._document_cls)
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the embedded document value.
 
@@ -544,7 +557,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             options.ref_field = 'id'
         super().__init__(document_cls, options)
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the referenced document value.
 
@@ -557,7 +570,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         Raises:
             ValueError: If validation fails due to missing referenced field value.
         """
-        value = super().validate(value)
+        value = super().__validate_value__(value)
         if getattr(value, self.ref_field.name) is expressions.EmptyValue:
             raise ValueError(
                 f'Referenced field {self.document_cls.__name__}.{self.ref_field.name} value required'
@@ -608,7 +621,7 @@ class StrMapper(Mapper, bind=str):
     Mapper for handling string values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the string value.
 
@@ -663,7 +676,7 @@ class DecimalMapper(ComparableMapper, bind=decimal.Decimal):
     Mapper for handling decimal values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the decimal value.
 
@@ -679,7 +692,7 @@ class DecimalMapper(ComparableMapper, bind=decimal.Decimal):
         """
         if isinstance(value, bson.Decimal128):
             value = value.to_decimal()
-        value = super().validate(value)
+        value = super().__validate_value__(value)
         # Ensure decimal limits for MongoDB
         # https://www.mongodb.com/docs/upcoming/release-notes/3.4/#decimal-type
         ctx = decimal.Context(prec=34)
@@ -719,7 +732,7 @@ class BoolMapper(Mapper, bind=bool):
     Mapper for handling boolean values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the boolean value.
 
@@ -743,7 +756,7 @@ class BinaryMapper(Mapper, bind=bytes):
     Mapper for handling binary values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the binary value.
 
@@ -782,7 +795,7 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
     Mapper for handling UUID values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the UUID value.
 
@@ -800,6 +813,11 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
             raise TypeError(f'Invalid data type {type(value)}, required is {uuid.UUID}')
         return value
 
+    def dump_value(self, value) -> typing.Any:
+        if self._options.extra.get('dump_as_str', False):
+            return str(value)
+        return value
+
     def dump_json(self, value, **options) -> typing.Any:
         """
         Dump the UUID value to a JSON-serializable format.
@@ -813,6 +831,11 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
 
         """
         return str(value)
+
+    def dump_bson(self, value, **options) -> typing.Any:
+        if self._options.extra.get('dump_bson_as_str', False):
+            return str(value)
+        return value
 
 
 class DateTimeMapper(ComparableMapper, bind=datetime.datetime):
@@ -840,7 +863,7 @@ class DateMapper(ComparableMapper, bind=datetime.date):
     Mapper for handling date values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the date value.
 
@@ -856,7 +879,7 @@ class DateMapper(ComparableMapper, bind=datetime.date):
         """
         if isinstance(value, datetime.datetime):
             value = value.date()
-        return super().validate(value)
+        return super().__validate_value__(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -892,7 +915,7 @@ class TimeMapper(ComparableMapper, bind=datetime.time):
     Mapper for handling time values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the time value.
 
@@ -908,7 +931,7 @@ class TimeMapper(ComparableMapper, bind=datetime.time):
         """
         if isinstance(value, datetime.datetime):
             value = value.time()
-        return super().validate(value)
+        return super().__validate_value__(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -955,10 +978,10 @@ class TupleMapper(SequenceMapper, bind=tuple):
     Inherits from ManyMapper and specifies 'tuple' as the binding type.
 
     """
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         if isinstance(value, list):
             value = tuple(value)
-        return super().validate(value)
+        return super().__validate_value__(value)
 
 
 class SetMapper(SequenceMapper, bind=set):
@@ -969,10 +992,10 @@ class SetMapper(SequenceMapper, bind=set):
 
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         if isinstance(value, list):
             value = set(value)
-        return super().validate(value)
+        return super().__validate_value__(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         return list(value)
@@ -986,7 +1009,7 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
     Mapper for handling BSON ObjectId values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the ObjectId value.
 
@@ -1003,6 +1026,11 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
         if not bson.ObjectId.is_valid(value):
             raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
         return bson.ObjectId(value)
+
+    def dump_value(self, value) -> typing.Any:
+        if self._options.extra.get('dump_as_str', False):
+            return str(value)
+        return value
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -1024,7 +1052,7 @@ class Int64Mapper(Mapper, bind=bson.Int64):
     Mapper for handling BSON Int64 values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the Int64 value.
 
@@ -1062,7 +1090,7 @@ class Decimal128Mapper(Mapper, bind=bson.Decimal128):
     Mapper for handling BSON Decimal128 values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the Decimal128 value.
 
@@ -1100,7 +1128,7 @@ class RegexMapper(Mapper, bind=bson.Regex):
     Mapper for handling BSON Regex values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the Regex value.
 
@@ -1138,7 +1166,7 @@ class CodeMapper(Mapper, bind=bson.Code):
     Mapper for handling BSON Code values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the Code value.
 
@@ -1176,7 +1204,7 @@ class ConstrainedStrMapper(StrMapper):
     Mapper for handling constrained string values.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the string value.
 
@@ -1187,7 +1215,12 @@ class ConstrainedStrMapper(StrMapper):
             Any: The validated value.
 
         """
-        return self.__bind__(super().validate(value))
+        return self.__bind__(super().__validate_value__(value))
+
+    def dump_value(self, value) -> typing.Any:
+        if self._options.extra.get('dump_as_str', False):
+            return str(value)
+        return value
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -1297,7 +1330,7 @@ class GeometryMapper(Mapper):
     This mapper validates and handles geometry data.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the geometry data.
 
@@ -1389,7 +1422,7 @@ class JsonMapper(Mapper, bind=types.Json):
     This mapper validates and handles JSON data.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the JSON data.
 
@@ -1422,7 +1455,7 @@ class BsonMapper(Mapper, bind=types.Bson):
     This mapper validates and handles BSON data.
     """
 
-    def validate(self, value) -> typing.Any:
+    def __validate_value__(self, value) -> typing.Any:
         """
         Validate the BSON data.
 
