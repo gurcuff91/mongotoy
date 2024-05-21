@@ -284,7 +284,7 @@ class Version(collections.UserString):
         super().__init__(value)
 
 
-class Point(geodata.Position):
+class Point(geodata.Position, geodata.Geometry):
     """
     For type "Point", the "coordinates" member is a single position.
 
@@ -297,7 +297,7 @@ class Point(geodata.Position):
         super().__init__(*coordinates)
 
 
-class MultiPoint(list[Point]):
+class MultiPoint(list[Point], geodata.Geometry):
     """
     For type "MultiPoint", the "coordinates" member is an array of
     positions.
@@ -309,7 +309,7 @@ class MultiPoint(list[Point]):
         super().__init__([Point(*i) for i in points])
 
 
-class LineString(list[Point]):
+class LineString(list[Point], geodata.Geometry):
     """
     For type "LineString", the "coordinates" member is an array of two or
     more positions.
@@ -323,7 +323,7 @@ class LineString(list[Point]):
         super().__init__([Point(*i) for i in points])
 
 
-class MultiLineString(list[LineString]):
+class MultiLineString(list[LineString], geodata.Geometry):
     """
     For type "MultiLineString", the "coordinates" member is an array of
     LineString coordinate arrays.
@@ -335,7 +335,7 @@ class MultiLineString(list[LineString]):
         super().__init__([LineString(*i) for i in lines])
 
 
-class Polygon(list[LineString]):
+class Polygon(list[LineString], geodata.Geometry):
     """
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
     """
@@ -344,7 +344,7 @@ class Polygon(list[LineString]):
         super().__init__([geodata.LinearRing(*i) for i in rings])
 
 
-class MultiPolygon(list[Polygon]):
+class MultiPolygon(list[Polygon], geodata.Geometry):
     """
      For type "MultiPolygon", the "coordinates" member is an array of
      Polygon coordinate arrays.

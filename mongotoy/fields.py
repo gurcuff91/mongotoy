@@ -1,4 +1,5 @@
 import dataclasses
+import re
 import typing
 
 import pymongo
@@ -47,9 +48,10 @@ def field(
         gte: typing.Any = None,
         min_items: typing.Optional[int] = None,
         max_items: typing.Optional[int] = None,
-        min_len: typing.Optional[int] = None,
-        max_len: typing.Optional[int] = None,
+        min_length: typing.Optional[int] = None,
+        max_length: typing.Optional[int] = None,
         choices: typing.Optional[list[str]] = None,
+        regex: re.Pattern = None,
         **extra
 ) -> FieldOptions:
     """
@@ -63,41 +65,22 @@ def field(
         index (IndexType, optional): Type of index for the field. Defaults to None.
         sparse (bool, optional): Whether the index should be sparse. Defaults to False.
         unique (bool, optional): Whether the index should be unique. Defaults to False.
-        lt (Any): Upper bound for the field value
-        lte (Any): Upper bound (inclusive) for the field value
-        gt (Any): Lower bound for the field value
-        gte (Any): Lower bound (inclusive) for the field value
-        min_items (int, optional): Minimum number of items for sequence fields
-        max_items (int, optional): Maximum  number of items for sequence fields
-        min_len (int, optional): Minimum length for string fields
-        max_len (int, optional): Maximum length for string fields
-        choices (list[str], optional): List of allowed choices for string fields
-        extra: Extra configurations
+        lt (Any): Upper bound for the field value.
+        lte (Any): Upper bound (inclusive) for the field value.
+        gt (Any): Lower bound for the field value.
+        gte (Any): Lower bound (inclusive) for the field value.
+        min_items (int, optional): Minimum number of items for sequence fields.
+        max_items (int, optional): Maximum number of items for sequence fields.
+        min_length (int, optional): Minimum length for string fields.
+        max_length (int, optional): Maximum length for string fields.
+        choices (list[str], optional): List of allowed choices for string fields.
+        regex (re.Pattern): Regular expression for string fields.
+        extra: Extra options for customization. Defaults to empty dict.
 
     Returns:
         FieldOptions: Field descriptor.
 
     """
-    extra_configs = {**extra}
-    if lt is not None:
-        extra_configs['lt'] = lt
-    if lte is not None:
-        extra_configs['lte'] = lte
-    if gt is not None:
-        extra_configs['gt'] = gt
-    if gte is not None:
-        extra_configs['gte'] = gte
-    if min_items is not None:
-        extra_configs['min_items'] = min_items
-    if max_items is not None:
-        extra_configs['max_items'] = max_items
-    if min_len is not None:
-        extra_configs['min_len'] = min_len
-    if max_len is not None:
-        extra_configs['max_len'] = max_len
-    if choices:
-        extra_configs['choices'] = choices
-
     return FieldOptions(
         alias=alias,
         id_field=id_field,
@@ -106,7 +89,17 @@ def field(
         index=index,
         sparse=sparse,
         unique=unique,
-        extra=extra_configs
+        lt=lt,
+        lte=lte,
+        gt=gt,
+        gte=gte,
+        min_items=min_items,
+        max_items=max_items,
+        min_length=min_length,
+        max_length=max_length,
+        choices=choices,
+        regex=regex,
+        extra=extra
     )
 
 
@@ -211,10 +204,7 @@ class Field:
         """
         if not instance:
             return FieldProxy(self)
-        value = instance.__data__.get(self.name, expressions.EmptyValue)
-        if value in (expressions.EmptyValue, None):
-            return value
-        return self.mapper.dump_value(value)
+        return instance.__data__.get(self.name, expressions.EmptyValue)
 
     def __set__(self, instance, value):
         """

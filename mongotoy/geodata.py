@@ -1,7 +1,14 @@
 import typing
 
 
-def parse_geojson(geojson: dict, parser: typing.Type) -> typing.Type:
+class Geometry:
+
+    def dump_geojson(self) -> dict:
+        # noinspection PyTypeChecker
+        return dict(type=self.__class__.__name__, coordinates=list(self))
+
+
+def parse_geojson(geojson: dict, parser: typing.Type[Geometry]) -> Geometry:
     """
     Parse a GeoJSON dictionary using a given geometry parser.
 

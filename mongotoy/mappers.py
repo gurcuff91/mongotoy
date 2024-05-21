@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import decimal
 import json
+import re
 import typing
 import uuid
 from types import UnionType, NoneType
@@ -30,17 +31,41 @@ class MapperOptions:
     Attributes:
         nullable (bool): Flag indicating whether the field is nullable. Defaults to False.
         default (Any): Default value for the field. Defaults to expressions.EmptyValue.
-        default_factory (Callable[[], Any] | None): Factory function to generate default values. Defaults to None.
+        default_factory (Callable[[], Any]): Factory function to generate default values. Defaults to None.
         ref_field (str): Field name to use as a reference. Defaults to None.
         key_name (str): Name of the key when using a reference. Defaults to None.
+        lt (Any): Upper bound for the field value.
+        lte (Any): Upper bound (inclusive) for the field value.
+        gt (Any): Lower bound for the field value.
+        gte (Any): Lower bound (inclusive) for the field value.
+        min_items (int): Minimum number of items for sequence fields.
+        max_items (int): Maximum number of items for sequence fields.
+        min_length (int): Minimum length for string fields.
+        max_length (int): Maximum length for string fields.
+        choices (list[str]): List of allowed choices for string fields.
+        regex (re.Pattern): Regular expression for string fields.
         extra (dict): Extra options for customization. Defaults to empty dict.
     """
     nullable: bool = dataclasses.field(default=False)
     default: typing.Any = dataclasses.field(default=expressions.EmptyValue)
-    default_factory: typing.Callable[[], typing.Any] | None = dataclasses.field(default=None)
+    default_factory: typing.Callable[[], typing.Any] = dataclasses.field(default=None)
     ref_field: str = dataclasses.field(default=None)
     key_name: str = dataclasses.field(default=None)
+    lt: typing.Any = dataclasses.field(default=None)
+    lte: typing.Any = dataclasses.field(default=None)
+    gt: typing.Any = dataclasses.field(default=None)
+    gte: typing.Any = dataclasses.field(default=None)
+    min_items: int = dataclasses.field(default=None)
+    max_items: int = dataclasses.field(default=None)
+    min_length: int = dataclasses.field(default=None)
+    max_length: int = dataclasses.field(default=None)
+    choices: list[str] = dataclasses.field(default=None)
+    regex: re.Pattern = dataclasses.field(default=None)
     extra: dict = dataclasses.field(default_factory=dict)
+
+    def get_default_value(self) -> typing.Any:
+        """Return the default value."""
+        return self.default_factory() if self.default_factory else self.default
 
 
 def build_mapper(mapper_bind: typing.Type, options: MapperOptions) -> 'Mapper':
@@ -168,7 +193,10 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def __init__(self, options: MapperOptions):
         self._options = options
-        self._default_factory = options.default_factory if options.default_factory else lambda: options.default
+
+    @property
+    def options(self) -> MapperOptions:
+        return self._options
 
     def __call__(self, value) -> typing.Any:
         """
@@ -185,13 +213,13 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
         """
         if value is expressions.EmptyValue:
-            value = self._default_factory()
+            value = self.options.get_default_value()
             if value is expressions.EmptyValue:
                 return value
 
         try:
             if value is None:
-                if not self._options.nullable:
+                if not self.options.nullable:
                     raise ValueError('Null value not allowed')
                 return value
 
@@ -215,19 +243,6 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
         """
         raise NotImplementedError
 
-    def dump_value(self, value) -> typing.Any:
-        """
-        Dump the value to be access direct from object instance.
-
-        Args:
-            value: The value to be dumped.
-
-        Returns:
-            Any: The dumped value.
-
-        """
-        return value
-
     def dump_dict(self, value, **options) -> typing.Any:
         """
         Dump the value to be in a dictionary.
@@ -240,7 +255,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
             Any: The dumped value.
 
         """
-        return self.dump_value(value)
+        return value
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -294,28 +309,27 @@ class ComparableMapper(Mapper):
         if not isinstance(value, self.__bind__):
             raise TypeError(f'Invalid data type {type(value)}, expected {self.__bind__}')
 
-        # Validate extra options
-        if self._options.extra:
-            if 'lt' in self._options.extra:
-                if value >= self._options.extra['lt']:
-                    raise ValueError(
-                        f'Invalid value {value}, required lt={self._options.extra["lt"]}'
-                    )
-            if 'lte' in self._options.extra:
-                if value > self._options.extra['lte']:
-                    raise ValueError(
-                        f'Invalid value {value}, required lte={self._options.extra["lte"]}'
-                    )
-            if 'gt' in self._options.extra:
-                if value <= self._options.extra['gt']:
-                    raise ValueError(
-                        f'Invalid value {value}, required gt={self._options.extra["gt"]}'
-                    )
-            if 'gte' in self._options.extra:
-                if value < self._options.extra['gte']:
-                    raise ValueError(
-                        f'Invalid value {value}, required gte={self._options.extra["gte"]}'
-                    )
+        # Validate comparators
+        if self.options.lt is not None:
+            if value >= self.options.lt:
+                raise ValueError(
+                    f'Invalid value {value}, required lt={self.options.lt}'
+                )
+        if self.options.lte is not None:
+            if value > self.options.lte:
+                raise ValueError(
+                    f'Invalid value {value}, required lte={self.options.lte}'
+                )
+        if self.options.gt is not None:
+            if value <= self.options.gt:
+                raise ValueError(
+                    f'Invalid value {value}, required gt={self.options.gt}'
+                )
+        if self.options.gte is not None:
+            if value < self.options.gte:
+                raise ValueError(
+                    f'Invalid value {value}, required gte={self.options.gte}'
+                )
 
         return value
 
@@ -327,7 +341,7 @@ class SequenceMapper(Mapper):
 
     def __init__(self, mapper: Mapper, options: MapperOptions):
         """
-        Initialize the ManyMapper.
+        Initialize the SequenceMapper.
 
         Args:
             mapper (Mapper): The mapper for the list items.
@@ -335,7 +349,7 @@ class SequenceMapper(Mapper):
 
         """
         self._mapper = mapper
-        # SequenceMapper must be a least an empty sequence not an EmptyValue for ReferencedDocumentMapper
+        # SequenceMapper must be at least an empty sequence, not an EmptyValue for ReferencedDocumentMapper
         if options.default is expressions.EmptyValue and isinstance(self.unwrap(), ReferencedDocumentMapper):
             options.default = self.__bind__()
         super().__init__(options)
@@ -376,18 +390,17 @@ class SequenceMapper(Mapper):
         if not isinstance(value, self.__bind__):
             raise TypeError(f'Invalid data type {type(value)}, required is {self.__bind__}')
 
-        # Validate extra options
-        if self._options.extra:
-            if 'min_items' in self._options.extra:
-                if len(value) < self._options.extra['min_items']:
-                    raise ValueError(
-                        f'Invalid value len {len(value)}, required min_items={self._options.extra["min_items"]}'
-                    )
-            if 'max_items' in self._options.extra:
-                if len(value) > self._options.extra['max_items']:
-                    raise ValueError(
-                        f'Invalid value len {len(value)}, required max_items={self._options.extra["max_items"]}'
-                    )
+        # Validate length
+        if self.options.min_items is not None:
+            if len(value) < self.options.min_items:
+                raise ValueError(
+                    f'Invalid length {len(value)}, required min_items={self.options.min_items}'
+                )
+        if self.options.max_items is not None:
+            if len(value) > self.options.max_items:
+                raise ValueError(
+                    f'Invalid length {len(value)}, required max_items={self.options.max_items}'
+                )
 
         new_value = []
         errors = []
@@ -413,7 +426,7 @@ class SequenceMapper(Mapper):
             Any: The dumped list value.
 
         """
-        return self.__bind__([self.mapper.dump_dict(i, **options) for i in value])
+        return self.__bind__((self.mapper.dump_dict(i, **options) for i in value))
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -557,26 +570,6 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
             options.ref_field = 'id'
         super().__init__(document_cls, options)
 
-    def __validate_value__(self, value) -> typing.Any:
-        """
-        Validate the referenced document value.
-
-        Args:
-            value: The value to be validated.
-
-        Returns:
-            Any: The validated value.
-
-        Raises:
-            ValueError: If validation fails due to missing referenced field value.
-        """
-        value = super().__validate_value__(value)
-        if getattr(value, self.ref_field.name) is expressions.EmptyValue:
-            raise ValueError(
-                f'Referenced field {self.document_cls.__name__}.{self.ref_field.name} value required'
-            )
-        return value
-
     @property
     def document_cls(self) -> typing.Type['documents.Document']:
         """
@@ -599,7 +592,27 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
 
         """
         from mongotoy import documents
-        return documents.get_document_field(self.document_cls, field_name=self._options.ref_field)
+        return documents.get_document_field(self.document_cls, field_name=self.options.ref_field)
+
+    def __validate_value__(self, value) -> typing.Any:
+        """
+        Validate the referenced document value.
+
+        Args:
+            value: The value to be validated.
+
+        Returns:
+            Any: The validated value.
+
+        Raises:
+            ValueError: If validation fails due to missing referenced field value.
+        """
+        value = super().__validate_value__(value)
+        if getattr(value, self.ref_field.name) is expressions.EmptyValue:
+            raise ValueError(
+                f'Referenced field {self.document_cls.__name__}.{self.ref_field.name} value required'
+            )
+        return value
 
     def dump_bson(self, value, **options) -> typing.Any:
         """
@@ -638,23 +651,25 @@ class StrMapper(Mapper, bind=str):
         if not isinstance(value, str):
             raise TypeError(f'Invalid data type {type(value)}, required is {str}')
 
-        # Validate extra options
-        if self._options.extra:
-            if 'min_len' in self._options.extra:
-                if len(value) < self._options.extra['min_len']:
-                    raise ValueError(
-                        f'Invalid value len {len(value)}, required min_len={self._options.extra["min_len"]}'
-                    )
-            if 'max_len' in self._options.extra:
-                if len(value) > self._options.extra['max_len']:
-                    raise ValueError(
-                        f'Invalid value len {len(value)}, required max_len={self._options.extra["max_len"]}'
-                    )
-            if 'choices' in self._options.extra:
-                if value not in self._options.extra['choices']:
-                    raise ValueError(
-                        f'Invalid value {value}, required choices={self._options.extra["choices"]}'
-                    )
+        # Validation options
+        if self.options.min_length is not None:
+            if len(value) < self.options.min_length:
+                raise ValueError(
+                    f'Invalid length {len(value)}, required min_length={self.options.min_length}'
+                )
+        if self.options.max_length is not None:
+            if len(value) > self.options.max_length:
+                raise ValueError(
+                    f'Invalid length {len(value)}, required max_length={self.options.max_length}'
+                )
+        if self.options.choices:
+            if value not in self.options.choices:
+                raise ValueError(
+                    f'Invalid value {value}, required choices={self.options.choices}'
+                )
+        if self.options.regex:
+            if not self.options.regex.fullmatch(value):
+                raise ValueError(f'Invalid value {value}, required regex={self.options.regex.pattern}')
 
         return value
 
@@ -813,11 +828,6 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
             raise TypeError(f'Invalid data type {type(value)}, required is {uuid.UUID}')
         return value
 
-    def dump_value(self, value) -> typing.Any:
-        if self._options.extra.get('dump_as_str', False):
-            return str(value)
-        return value
-
     def dump_json(self, value, **options) -> typing.Any:
         """
         Dump the UUID value to a JSON-serializable format.
@@ -833,7 +843,7 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
         return str(value)
 
     def dump_bson(self, value, **options) -> typing.Any:
-        if self._options.extra.get('dump_bson_as_str', False):
+        if self.options.extra.get('dump_bson_as_str', False):
             return str(value)
         return value
 
@@ -1027,11 +1037,6 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
             raise TypeError(f'Invalid data type {type(value)}, required is {bson.ObjectId}')
         return bson.ObjectId(value)
 
-    def dump_value(self, value) -> typing.Any:
-        if self._options.extra.get('dump_as_str', False):
-            return str(value)
-        return value
-
     def dump_json(self, value, **options) -> typing.Any:
         """
         Dump the ObjectId value to a JSON-serializable format.
@@ -1215,12 +1220,7 @@ class ConstrainedStrMapper(StrMapper):
             Any: The validated value.
 
         """
-        return self.__bind__(super().__validate_value__(value))
-
-    def dump_value(self, value) -> typing.Any:
-        if self._options.extra.get('dump_as_str', False):
-            return str(value)
-        return value
+        return str(self.__bind__(super().__validate_value__(value)))
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -1344,6 +1344,7 @@ class GeometryMapper(Mapper):
             TypeError: If the value is not of the expected type.
         """
         if isinstance(value, dict):
+            # noinspection PyTypeChecker
             value = geodata.parse_geojson(value, parser=self.__bind__)
         if not isinstance(value, self.__bind__):
             raise TypeError(f'Invalid data type {type(value)}, expected {self.__bind__}')
@@ -1360,10 +1361,7 @@ class GeometryMapper(Mapper):
         Returns:
             Any: The dumped geometry data.
         """
-        return {
-            'type': self.__bind__.__name__,
-            'coordinates': list(value)
-        }
+        return value.dump_geojson()
 
     def dump_bson(self, value, **options) -> typing.Any:
         """
