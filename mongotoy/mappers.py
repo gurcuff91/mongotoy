@@ -1361,7 +1361,7 @@ class GeometryMapper(Mapper):
         Returns:
             Any: The dumped geometry data.
         """
-        return value.dump_geojson()
+        return value.dump_json()
 
     def dump_bson(self, value, **options) -> typing.Any:
         """

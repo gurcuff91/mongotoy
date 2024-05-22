@@ -203,19 +203,10 @@ class SessionError(Exception):
     """
 
 
-class NoResultsError(Exception):
+class NoResultError(Exception):
     """
     Error raised when no results are found.
 
-    This exception is raised when an operation expects results but none are found.
-
-    """
-
-
-class ManyResultsError(Exception):
-    """
-    Error raised when multiple results are found.
-
-    This exception is raised when an operation expects a single result but multiple results are found.
+    This exception is raised when an operation expects a result, but none are found.
 
     """

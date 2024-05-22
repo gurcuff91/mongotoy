@@ -46,9 +46,8 @@ class Person(Document):
 
 ### Extra configurations
 
-The `mongotoy.field()` function accommodates an arbitrary number of additional parameters for fine-tuning field 
-creation and validation. Certain [data types](/gurcuff91/mongotoy/docs/data_types) support specific configuration 
-parameters.
+The `mongotoy.field()` function accepts additional parameters for fine-tuning field creation and validation. 
+Certain [data types](/gurcuff91/mongotoy/docs/data_types) support specific configuration parameters.
 
 #### Comparable types
 
@@ -65,9 +64,10 @@ configuration parameters to fine-tune how comparisons are conducted.
 
 The `str` type supports these configuration parameters for customization:
 
-- **min_len**: Specifies the minimum length allowed.
-- **max_len**: Specifies the maximum length allowed.
+- **min_length**: Specifies the minimum length allowed.
+- **max_length**: Specifies the maximum length allowed.
 - **choices**: Defines a list of valid value choices.
+- **regex**: Defines a regular expression to validate.
 
 #### Sequence types
 
@@ -84,7 +84,7 @@ from mongotoy import Document, field
 
 
 class Person(Document):
-    name: str = field(max_len=128)
+    name: str = field(max_length=128)
     age: int = field(gte=21)
     colors: list[str] = field(choices=['white', 'black', 'green'], max_items=2)
 ````

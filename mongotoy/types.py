@@ -6,10 +6,15 @@ import typing
 
 import bson
 
-from mongotoy import geodata
-
 if typing.TYPE_CHECKING:
     from mongotoy import db
+
+from mongotoy.geodata import Point as _Point
+from mongotoy.geodata import MultiPoint as _MultiPoint
+from mongotoy.geodata import LineString as _LineString
+from mongotoy.geodata import MultiLineString as _MultiLineString
+from mongotoy.geodata import Polygon as _Polygon
+from mongotoy.geodata import MultiPolygon as _MultiPolygon
 
 
 class IpV4(collections.UserString):
@@ -284,76 +289,40 @@ class Version(collections.UserString):
         super().__init__(value)
 
 
-class Point(geodata.Position, geodata.Geometry):
+class Point(_Point):
     """
-    For type "Point", the "coordinates" member is a single position.
-
-    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.2
+        This is a forwarding for type mongotoy.geodata.Point
     """
 
-    def __init__(self, *coordinates: int | float):
-        if len(coordinates) != 2:
-            raise TypeError(f'The Point must represent single position, i.e. [lat, long]')
-        super().__init__(*coordinates)
 
-
-class MultiPoint(list[Point], geodata.Geometry):
+class MultiPoint(_MultiPoint):
     """
-    For type "MultiPoint", the "coordinates" member is an array of
-    positions.
-
-    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.3
+        This is a forwarding for type mongotoy.geodata.MultiPoint
     """
 
-    def __init__(self, *points: Point):
-        super().__init__([Point(*i) for i in points])
 
-
-class LineString(list[Point], geodata.Geometry):
+class LineString(_LineString):
     """
-    For type "LineString", the "coordinates" member is an array of two or
-    more positions.
-
-    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.4
+        This is a forwarding for type mongotoy.geodata.LineString
     """
 
-    def __init__(self, *points: Point):
-        if not len(points) >= 2:
-            raise TypeError('The LineString must be an array of two or more Points')
-        super().__init__([Point(*i) for i in points])
 
-
-class MultiLineString(list[LineString], geodata.Geometry):
+class MultiLineString(_MultiLineString):
     """
-    For type "MultiLineString", the "coordinates" member is an array of
-    LineString coordinate arrays.
-
-    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.5
+        This is a forwarding for type mongotoy.geodata.MultiLineString
     """
 
-    def __init__(self, *lines: LineString):
-        super().__init__([LineString(*i) for i in lines])
 
-
-class Polygon(list[LineString], geodata.Geometry):
+class Polygon(_Polygon):
     """
-    https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
+        This is a forwarding for type mongotoy.geodata.Polygon
     """
 
-    def __init__(self, *rings: LineString):
-        super().__init__([geodata.LinearRing(*i) for i in rings])
 
-
-class MultiPolygon(list[Polygon], geodata.Geometry):
+class MultiPolygon(_MultiPolygon):
     """
-     For type "MultiPolygon", the "coordinates" member is an array of
-     Polygon coordinate arrays.
-
-     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.7
+        This is a forwarding for type mongotoy.geodata.MultiPolygon
     """
-
-    def __init__(self, *polygons: Polygon):
-        super().__init__([Polygon(*i) for i in polygons])
 
 
 class Json(dict):

@@ -12,7 +12,7 @@
 The `Objects` class in Mongotoy facilitates querying documents from a MongoDB database, offering a variety of methods 
 for filtering, sorting, limiting, and executing queries asynchronously. It is initialized with the document class
 associated with the query set, a session object for database operations, and an optional depth for dereferencing 
-referenced documents. Key features include document creation, filtering, sorting, skipping, and limiting. Asynchronous
+referenced documents. Key features include filtering, sorting, skipping, and limiting. Asynchronous and synchronous
 iteration over the result set is supported, with methods to fetch all documents, retrieve a single document, fetch 
 a document by its identifier, and count the number of documents.
 
@@ -25,21 +25,6 @@ async with engine.session() as session:
     
     # Create objects from a Person document
     persons = session.objects(Person)
-````
-
-### Creating documents
-
-The `create()` method in the `Objects` class facilitates the creation of new documents within the database. It accepts
-keyword arguments representing the data for the document, saves the document to the database using the associated 
-session, and returns the newly created document instance. This method streamlines the process of adding new data to 
-the database by providing a simple and intuitive interface.
-
-````python
-# Open db session
-async with engine.session() as session:
-    
-    # Create new person
-    persons = await session.objects(Person).create(**person_data)
 ````
 
 ### Filtering documents
@@ -124,11 +109,11 @@ async with engine.session() as session:
 
 ### Iterating documents
 
-The `Objects` class enables asynchronous iteration over the result set of a database query. It executes the query 
-asynchronously, yielding parsed document instances one by one. This function is essential for handling large datasets
-efficiently, as it allows you to iterate over query results without blocking the event loop. By leveraging the 
-asynchronous iteration, you can seamlessly process query results in an asynchronous manner, facilitating smooth and
-responsive application behavior.
+The `Objects` class enables asynchronous and synchronous iteration over the result set of a database query. It executes 
+the query asynchronously or synchronously, yielding parsed document instances one by one. Those functions are essential 
+for handling large datasets efficiently, as it allows you to iterate over query results without blocking the event loop.
+By leveraging the asynchronous and synchronous iteration, you can seamlessly process query results in an asynchronous or 
+synchronous manner.
 
 ````python
 # Open db session
@@ -144,37 +129,33 @@ async with engine.session() as session:
 In Mongotoy, you have several options for fetching documents. The Objects class offers the following methods for 
 retrieving data:
 
-- **fetch()**: Asynchronously retrieves all documents in the result set. It returns a list of parsed document instances, 
+- **all()**: Retrieves all documents in the result set. It returns a list of parsed document instances, 
 enabling comprehensive access to query results for further processing or display.
 
-- **fetch_one()**: Asynchronously retrieves a specific document from the result set. It returns a single-parsed document
-instance, suitable for scenarios where only one result is expected.
+- **one()**: Retrieves a specific document from the result set. It returns a single-parsed document
+instance. Raise `mongotoy.errors.NoResultError()` if no result found.
 
-- **fetch_by_id(value)**: Asynchronously retrieves a document by its identifier from the result set. It returns a parsed 
-document instance corresponding to the provided identifier, allowing for targeted document retrieval based on unique
-identifiers.
+- **one_or_none()**: Retrieves a specific document from the result set. It returns a single-parsed document
+instance or `None` if no result found.
 
-These functions contribute to efficient data retrieval and manipulation by leveraging asynchronous operations, 
-ensuring responsiveness and scalability in handling database queries.
+- **get_by_id(value)**: Retrieves a document by its identifier from the result set. It returns a parsed 
+document instance corresponding to the provided identifier.
+
+These functions contribute to efficient data retrieval and manipulation by leveraging asynchronous or synchronous
+operations, ensuring responsiveness and scalability in handling database queries.
 
 ````python
 # Open db session
 async with engine.session() as session:
-    
     # Fetching all persons
-    persons = await session.objects(Person).fetch()
+    persons = await session.objects(Person).all()
 
     # Fetching one person
-    person = await session.objects(Person).fetch_one()
+    person = await session.objects(Person).one()
 
     # Fetching one person by id
-    person = await session.objects(Person).fetch_by_id(1)
+    person = await session.objects(Person).get_by_id(1)
 ````
-
-/// warning | Attention
-The `fetch_one` and `fetch_by_id` functions will raise a `mongotoy.errors.NoResultsError` when no document matches the
-query and a `mongotoy.errors.ManyResultsError` if multiple documents are returned unexpectedly.
-///
 
 ### Counting documents
 
@@ -299,7 +280,6 @@ Query.Gt('age', 21)
 /// warning | Attention
 To ensure accurate querying expressions, use the `alias` rather than the field `name` for fields with defined aliases. 
 Otherwise, querying operations might target nonexistent database fields, resulting in inaccuracies.
-///
 ///
 
 ### The Q function

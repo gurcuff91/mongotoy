@@ -15,7 +15,7 @@ from motor.motor_gridfs import AgnosticGridFSBucket
 from pymongo.read_concern import ReadConcern
 
 from mongotoy import documents, expressions, references, fields, types, sync
-from mongotoy.errors import EngineError, NoResultsError, ManyResultsError, SessionError
+from mongotoy.errors import EngineError, NoResultError, SessionError
 
 __all__ = (
     'Engine',
@@ -116,14 +116,14 @@ class Engine:
     def _get_document_indexes(
         self,
         document_cls: typing.Type[documents.BaseDocument],
-        parent: str = None
+        parent_field: str = None
     ) -> list[pymongo.IndexModel]:
         """
         Retrieves document indexes.
 
         Args:
             document_cls (typing.Type[documents.BaseDocument]): The document class.
-            parent (str, optional): The parent document.
+            parent_field (str, optional): The parent field.
 
         Returns:
             list[pymongo.IndexModel]: List of pymongo IndexModels.
@@ -140,7 +140,7 @@ class Engine:
                 i_new_keys = []
                 for i_key, i_type in i_keys.items():
                     i_new_keys.append(
-                        (f'{parent}.{i_key}' if parent else i_key, i_type)
+                        (f'{parent_field}.{i_key}' if parent_field else i_key, i_type)
                     )
                 indexes.append(pymongo.IndexModel(i_new_keys, **i_doc))
 
@@ -160,13 +160,13 @@ class Engine:
             ):
                 indexes.append(
                     pymongo.IndexModel(
-                        [(f'{parent}.{field.alias}' if parent else field.alias, pymongo.GEOSPHERE)]
+                        [(f'{parent_field}.{field.alias}' if parent_field else field.alias, pymongo.GEOSPHERE)]
                     )
                 )
 
             # Add EmbeddedDocument indexes
             if isinstance(mapper, mappers.EmbeddedDocumentMapper):
-                indexes.extend(self._get_document_indexes(mapper.document_cls, parent=field.alias))
+                indexes.extend(self._get_document_indexes(mapper.document_cls, parent_field=field.alias))
 
         return indexes
 
@@ -255,27 +255,27 @@ class Engine:
     async def _exec_migration(
         self,
         document_cls: typing.Type[T],
-        skip_exist: bool = True,
-        driver_session: AgnosticClientSession = None
+        driver_session: AgnosticClientSession = None,
+        check_exist: bool = True,
     ):
         """
         Executes document migration.
 
         Args:
             document_cls (typing.Type[T]): The document class.
-            skip_exist (bool, optional): Whether to skip if a collection exists.
             driver_session (AgnosticClientSession, optional): The database session.
+            check_exist (bool, optional): Whether to check if a collection exists.
         """
-        do_apply = True
+        do_migration = True
 
         # Skip if a collection already exists
-        if skip_exist:
+        if check_exist:
             collections = await self.database.list_collection_names(session=driver_session)
             if document_cls.__collection_name__ in collections:
-                do_apply = False
+                do_migration = False
 
         # Create collection and indexes
-        if do_apply:
+        if do_migration:
             await self._create_document_collection(document_cls, driver_session=driver_session)
             await self._create_document_indexes(document_cls, driver_session=driver_session)
 
@@ -284,7 +284,7 @@ class Engine:
         self,
         func: typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]],
         session: 'Session',
-        skip_exist: bool = True
+        check_exist: bool = True
     ):
         """
         Executes seeding.
@@ -292,7 +292,7 @@ class Engine:
         Args:
             func (typing.Callable[['Session'], typing.Coroutine[typing.Any, typing.Any, None]]): The seeding function.
             session (Session): The session object.
-            skip_exist (bool, optional): Whether to skip if seeding already exists.
+            check_exist (bool, optional): Whether to check if seeding already exists.
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError('Seeding function must be async')
@@ -301,7 +301,7 @@ class Engine:
         do_seeding = True
 
         # Skip if seeding already applied
-        if skip_exist:
+        if check_exist:
             # noinspection PyProtectedMember
             if await session.objects(Seeding).filter(
                 Seeding.function == func_path
@@ -357,7 +357,7 @@ class Engine:
         await asyncio.gather(*[
             self._exec_migration(
                 doc_cls,
-                skip_exist=False,
+                check_exist=False,
                 driver_session=driver_session
             ) for doc_cls in documents_cls if doc_cls.__collection_name__ not in collections
         ])
@@ -389,14 +389,14 @@ class Engine:
             session (Session, optional): The session object.
         """
         # noinspection PyProtectedMember
-        seeds = await session.objects(Seeding)._fetch()
+        seeds = await session.objects(Seeding)._all()
         seeds = [s.function for s in seeds]
         # noinspection PyUnresolvedReferences
         await asyncio.gather(*[
             self._exec_seeding(
                 func,
                 session=session,
-                skip_exist=False
+                check_exist=False
             ) for func in funcs if f'{func.__module__}.{func.__name__}' not in seeds
         ])
 
@@ -549,9 +549,15 @@ class Session(typing.AsyncContextManager, typing.ContextManager):
         await self._end()
 
     def __enter__(self) -> 'Session':
+        """
+        Enables the use of the 'with' statement.
+        """
         return sync.run_sync(self.__aenter__)()
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Enables the use of the 'with' statement. Ends the session upon exiting the context.
+        """
         sync.run_sync(self.__aexit__)(exc_type, exc_value, traceback)
 
     async def _start(self):
@@ -650,6 +656,7 @@ class Session(typing.AsyncContextManager, typing.ContextManager):
                 do_delete = False
                 # Scan all references
                 for field_name, reference in refs.items():
+                    # Mark to delete
                     if not reference.is_many:
                         do_delete = True
                         break
@@ -662,11 +669,13 @@ class Session(typing.AsyncContextManager, typing.ContextManager):
                             i for i in value
                             if getattr(i, reference.ref_field.name) != getattr(doc, reference.ref_field.name)
                         ]
+                        # Mark to delete
                         if not value:
                             do_delete = True
                             break
-                        setattr(ref_doc, field_name, value)
+
                         # Apply update
+                        setattr(ref_doc, field_name, value)
                         operations.append(self._save(ref_doc))
 
                 # Apply delete
@@ -831,9 +840,23 @@ class Transaction(typing.AsyncContextManager, typing.ContextManager):
             await self._commit()
 
     def __enter__(self) -> 'Transaction':
+        """
+        Enables the use of the 'with' statement.
+
+        Returns:
+            Transaction: The transaction instance.
+        """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Enables the use of the 'with' statement. Ends the transaction upon exiting the context.
+
+        Args:
+            exc_type: The type of the exception.
+            exc_value: The exception value.
+            traceback: The exception traceback.
+        """
         sync.run_sync(self.__aexit__)(exc_type, exc_value, traceback)
 
     async def _commit(self):
@@ -900,7 +923,6 @@ class Objects(typing.Generic[T]):
             session=self._session,
             dereference_deep=self._dereference_deep
         )
-        setattr(objs, '_collection', self._collection)
         setattr(objs, '_filter', options.get('_filter', self._filter))
         setattr(objs, '_sort', options.get('_sort', self._sort))
         setattr(objs, '_skip', options.get('_skip', self._skip))
@@ -914,10 +936,6 @@ class Objects(typing.Generic[T]):
 
         Yields:
             T: The parsed document instances.
-
-        Raises:
-            NoResultsError: If no results are found.
-            ManyResultsError: If more than one result is found.
         """
         # noinspection PyTypeChecker
         pipeline = references.build_dereference_pipeline(
@@ -939,66 +957,69 @@ class Objects(typing.Generic[T]):
             yield self._document_cls(**data)
 
     def __iter__(self) -> typing.Generator[T, None, None]:
+        """
+        Synchronously iterates over the result set, executing the query.
+
+        Yields:
+            T: The parsed document instances.
+        """
         for doc in sync.as_sync_gen(self.__aiter__()):
             yield doc
 
-    async def _create(self, **data) -> T:
-        """
-        Creates a new document in the database.
-
-        Args:
-            **data: Keyword arguments representing the document data.
-
-        Returns:
-            T: The newly created document instance.
-        """
-        doc = self._document_cls(**data)
-        # noinspection PyProtectedMember
-        await self._session._save(doc, save_references=True)
-        return doc
-
-    async def _fetch(self) -> list[T]:
+    async def _all(self) -> list[T]:
         """
         Retrieves all documents in the result set.
 
         Returns:
-            list[T]: The list of parsed document instances.
+            list[T]: The list of document instances.
         """
         return [doc async for doc in self]
 
-    async def _fetch_one(self) -> T:
+    async def _one(self) -> T:
         """
-        Retrieves a specific document in the result set.
+        Retrieves one document in the result set.
+
+        Returns:
+            T: The document instance.
+
+        Raises:
+            NoResultsError: If no results are found.
+        """
+        docs = await self.limit(1)._all()
+        if not docs:
+            raise NoResultError()
+        return docs[0]
+
+    async def _one_or_none(self) -> typing.Optional[T]:
+        """
+        Retrieves one document in the result set, or None if not exist.
+
+        Returns:
+            Optional[T]: The document instance or None.
+        """
+        try:
+            return await self._one()
+        except NoResultError:
+            pass
+
+    # noinspection PyShadowingBuiltins
+    async def _get_by_id(self, id_value: typing.Any) -> T:
+        """
+        Retrieves a document by its identifier.
+
+        Args:
+            id_value (typing.Any): The identifier value.
 
         Returns:
             T: The parsed document instance.
 
         Raises:
             NoResultsError: If no results are found.
-            ManyResultsError: If more than one result is found.
-        """
-        docs = await self.limit(2)._fetch()
-        if not docs:
-            raise NoResultsError()
-        if len(docs) > 1:
-            raise ManyResultsError()
-        return docs[0]
-
-    # noinspection PyShadowingBuiltins
-    async def _fetch_by_id(self, value: typing.Any) -> T:
-        """
-        Retrieves a document by its identifier.
-
-        Args:
-            value (typing.Any): The identifier value.
-
-        Returns:
-            T: The parsed document instance.
         """
         # noinspection PyProtectedMember
         return await self.filter(
-            self._document_cls.id == self._document_cls.id._field.mapper.__validate_value__(value)
-        )._fetch_one()
+            self._document_cls.id == self._document_cls.id._field.mapper.__validate_value__(id_value)
+        )._one()
 
     async def _count(self) -> int:
         """
@@ -1070,20 +1091,20 @@ class Objects(typing.Generic[T]):
         return self.__copy__(_limit=limit)
 
     @sync.proxy
-    def create(self, **data) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
-        return self._create(**data)
+    def all(self) -> typing.Coroutine[typing.Any, typing.Any, list[T]] | list[T]:
+        return self._all()
 
     @sync.proxy
-    def fetch(self) -> typing.Coroutine[typing.Any, typing.Any, list[T]] | list[T]:
-        return self._fetch()
+    def one(self) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
+        return self._one()
 
     @sync.proxy
-    def fetch_one(self) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
-        return self._fetch_one()
+    def one_or_none(self) -> typing.Coroutine[typing.Any, typing.Any, typing.Optional[T]] | typing.Optional[T]:
+        return self._one_or_none()
 
     @sync.proxy
-    def fetch_by_id(self, value: typing.Any) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
-        return self._fetch_by_id(value)
+    def get_by_id(self, value: typing.Any) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
+        return self._get_by_id(value)
 
     @sync.proxy
     def count(self) -> typing.Coroutine[typing.Any, typing.Any, int] | int:
@@ -1156,7 +1177,7 @@ class FsBucket(Objects['FsObject']):
             session=self._session.driver_session
         )
         # Update obj info
-        obj = await self._fetch_by_id(obj.id)
+        obj = await self._get_by_id(obj.id)
 
         return obj
 
@@ -1183,7 +1204,7 @@ class FsBucket(Objects['FsObject']):
         Returns:
             list[FsObject]: A list of file objects representing revisions.
         """
-        return await self.filter(Query.Eq('filename', filename))._fetch()
+        return await self.filter(Query.Eq('filename', filename))._all()
 
     @sync.proxy
     def create(
@@ -1318,6 +1339,7 @@ class FsObject(documents.Document):
             session=fs._session.driver_session
         )
 
+        # noinspection PyTypeChecker
         return FsObjectStream(grid_out)
 
     async def _delete(self, fs: FsBucket):
@@ -1374,7 +1396,7 @@ class FsObjectStream:
         Reads data from the file asynchronously.
 
         Args:
-            size (int, optional): The number of bytes to read. If not specified or negative, reads until EOF.
+            size (int, optional): The number of bytes to read. If not specified or negative, read until EOF.
 
         Returns:
             bytes: The data read from the file.
@@ -1396,7 +1418,7 @@ class FsObjectStream:
         Reads a line from the file asynchronously.
 
         Args:
-            size (int, optional): The maximum number of bytes to read. If not specified or negative, reads until EOF.
+            size (int, optional): The maximum number of bytes to read. If not specified or negative, read until EOF.
 
         Returns:
             bytes: The line read from the file.
@@ -1470,6 +1492,6 @@ class Seeding(documents.Document):
     """
 
     function: str = fields.field(id_field=True)
-    applied_at: datetime.datetime = fields.field(default_factory=datetime.datetime.utcnow)
+    applied_at: datetime.datetime = fields.field(default_factory=datetime.datetime.now)
 
     __collection_name__ = 'mongotoy.seeding'
