@@ -200,7 +200,7 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
 
     def __call__(self, value) -> typing.Any:
         """
-        Validate the value.
+        Maps and validate the value.
 
         Args:
             value (Any): The value to be validated.
@@ -212,27 +212,31 @@ class Mapper(abc.ABC, metaclass=MapperMeta):
             Any: The validated value.
 
         """
+        # Get default value
         if value is expressions.EmptyValue:
             value = self.options.get_default_value()
             if value is expressions.EmptyValue:
                 return value
 
         try:
+            # Check nullability
             if value is None:
                 if not self.options.nullable:
                     raise ValueError('Null value not allowed')
                 return value
 
-            value = self.__validate_value__(value)
+            # Validate value
+            value = self.validate_value(value)
+
         except (TypeError, ValueError) as e:
-            raise ValidationError(errors=[ErrorWrapper(loc=tuple(), error=e)]) from None
+            raise ValidationError(ErrorWrapper(e)) from None
 
         return value
 
     @abc.abstractmethod
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
-        Abstract validator to be implemented in child mappers.
+        Abstract value validator to be implemented in child mappers.
 
         Args:
             value: The value to be validated.
@@ -295,7 +299,7 @@ class ComparableMapper(Mapper):
     - gte (greater than or equal to)
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the input value against the specified comparators.
         Args:
@@ -373,7 +377,7 @@ class SequenceMapper(Mapper):
         return mapper_
 
     # noinspection PyTypeChecker
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the list value.
 
@@ -403,14 +407,16 @@ class SequenceMapper(Mapper):
                 )
 
         new_value = []
-        errors = []
+        val_errors = []
+
         for i, val in enumerate(value):
             try:
                 new_value.append(self.mapper(val))
             except ValidationError as e:
-                errors.extend([ErrorWrapper(loc=(str(i),), error=j) for j in e.errors])
-        if errors:
-            raise ValidationError(errors=errors)
+                val_errors.extend([ErrorWrapper(err, loc=(str(i),)) for err in e.errors])
+
+        if val_errors:
+            raise ValidationError(*val_errors)
 
         return self.__bind__(new_value)
 
@@ -488,7 +494,7 @@ class EmbeddedDocumentMapper(Mapper):
         from mongotoy import documents
         return documents.get_embedded_document_cls(self._document_cls)
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the embedded document value.
 
@@ -594,7 +600,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         from mongotoy import documents
         return documents.get_document_field(self.document_cls, field_name=self.options.ref_field)
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the referenced document value.
 
@@ -607,7 +613,7 @@ class ReferencedDocumentMapper(EmbeddedDocumentMapper):
         Raises:
             ValueError: If validation fails due to missing referenced field value.
         """
-        value = super().__validate_value__(value)
+        value = super().validate_value(value)
         if getattr(value, self.ref_field.name) is expressions.EmptyValue:
             raise ValueError(
                 f'Referenced field {self.document_cls.__name__}.{self.ref_field.name} value required'
@@ -634,7 +640,7 @@ class StrMapper(Mapper, bind=str):
     Mapper for handling string values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the string value.
 
@@ -691,7 +697,7 @@ class DecimalMapper(ComparableMapper, bind=decimal.Decimal):
     Mapper for handling decimal values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the decimal value.
 
@@ -707,7 +713,7 @@ class DecimalMapper(ComparableMapper, bind=decimal.Decimal):
         """
         if isinstance(value, bson.Decimal128):
             value = value.to_decimal()
-        value = super().__validate_value__(value)
+        value = super().validate_value(value)
         # Ensure decimal limits for MongoDB
         # https://www.mongodb.com/docs/upcoming/release-notes/3.4/#decimal-type
         ctx = decimal.Context(prec=34)
@@ -747,7 +753,7 @@ class BoolMapper(Mapper, bind=bool):
     Mapper for handling boolean values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the boolean value.
 
@@ -771,7 +777,7 @@ class BinaryMapper(Mapper, bind=bytes):
     Mapper for handling binary values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the binary value.
 
@@ -810,7 +816,7 @@ class UUIDMapper(Mapper, bind=uuid.UUID):
     Mapper for handling UUID values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the UUID value.
 
@@ -873,7 +879,7 @@ class DateMapper(ComparableMapper, bind=datetime.date):
     Mapper for handling date values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the date value.
 
@@ -889,7 +895,7 @@ class DateMapper(ComparableMapper, bind=datetime.date):
         """
         if isinstance(value, datetime.datetime):
             value = value.date()
-        return super().__validate_value__(value)
+        return super().validate_value(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -925,7 +931,7 @@ class TimeMapper(ComparableMapper, bind=datetime.time):
     Mapper for handling time values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the time value.
 
@@ -941,7 +947,7 @@ class TimeMapper(ComparableMapper, bind=datetime.time):
         """
         if isinstance(value, datetime.datetime):
             value = value.time()
-        return super().__validate_value__(value)
+        return super().validate_value(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -988,10 +994,10 @@ class TupleMapper(SequenceMapper, bind=tuple):
     Inherits from ManyMapper and specifies 'tuple' as the binding type.
 
     """
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         if isinstance(value, list):
             value = tuple(value)
-        return super().__validate_value__(value)
+        return super().validate_value(value)
 
 
 class SetMapper(SequenceMapper, bind=set):
@@ -1002,10 +1008,10 @@ class SetMapper(SequenceMapper, bind=set):
 
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         if isinstance(value, list):
             value = set(value)
-        return super().__validate_value__(value)
+        return super().validate_value(value)
 
     def dump_json(self, value, **options) -> typing.Any:
         return list(value)
@@ -1019,7 +1025,7 @@ class ObjectIdMapper(Mapper, bind=bson.ObjectId):
     Mapper for handling BSON ObjectId values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the ObjectId value.
 
@@ -1057,7 +1063,7 @@ class Int64Mapper(Mapper, bind=bson.Int64):
     Mapper for handling BSON Int64 values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the Int64 value.
 
@@ -1095,7 +1101,7 @@ class Decimal128Mapper(Mapper, bind=bson.Decimal128):
     Mapper for handling BSON Decimal128 values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the Decimal128 value.
 
@@ -1133,7 +1139,7 @@ class RegexMapper(Mapper, bind=bson.Regex):
     Mapper for handling BSON Regex values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the Regex value.
 
@@ -1171,7 +1177,7 @@ class CodeMapper(Mapper, bind=bson.Code):
     Mapper for handling BSON Code values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the Code value.
 
@@ -1209,7 +1215,7 @@ class ConstrainedStrMapper(StrMapper):
     Mapper for handling constrained string values.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the string value.
 
@@ -1220,7 +1226,7 @@ class ConstrainedStrMapper(StrMapper):
             Any: The validated value.
 
         """
-        return str(self.__bind__(super().__validate_value__(value)))
+        return str(self.__bind__(super().validate_value(value)))
 
     def dump_json(self, value, **options) -> typing.Any:
         """
@@ -1330,7 +1336,7 @@ class GeometryMapper(Mapper):
     This mapper validates and handles geometry data.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the geometry data.
 
@@ -1420,7 +1426,7 @@ class JsonMapper(Mapper, bind=types.Json):
     This mapper validates and handles JSON data.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the JSON data.
 
@@ -1453,7 +1459,7 @@ class BsonMapper(Mapper, bind=types.Bson):
     This mapper validates and handles BSON data.
     """
 
-    def __validate_value__(self, value) -> typing.Any:
+    def validate_value(self, value) -> typing.Any:
         """
         Validate the BSON data.
 

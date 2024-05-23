@@ -105,15 +105,17 @@ class BaseDocument(abc.ABC, metaclass=BaseDocumentMeta):
 
     def __init__(self, **data):
         self.__data__ = {}
-        errors = []
+        val_errors = []
+
         for field in self.__fields__.values():
             value = data.get(field.alias, data.get(field.name, expressions.EmptyValue))
             try:
                 field.__set__(self, value=value)
             except ValidationError as e:
-                errors.extend(e.errors)
-        if errors:
-            raise DocumentValidationError(self.__class__, errors=errors)
+                val_errors.extend(e.errors)
+
+        if val_errors:
+            raise DocumentValidationError(self.__class__, errors=val_errors)
 
     def _dump(
         self,

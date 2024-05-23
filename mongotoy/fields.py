@@ -254,17 +254,16 @@ class Field:
 
         """
         try:
-            # Validate value
+            # Map value
             value = self.mapper(value)
 
             # Check id value
             if self.alias == '_id' and value is expressions.EmptyValue:
-                raise ValidationError([
-                    ErrorWrapper(loc=tuple(), error=ValueError('Id field value required'))
-                ])
+                raise ValidationError(ErrorWrapper(ValueError('Id field value required')))
+
         except ValidationError as e:
             raise ValidationError(
-                errors=[ErrorWrapper(loc=(self.name,), error=i) for i in e.errors]
+                *[ErrorWrapper(err, loc=(self.name,)) for err in e.errors]
             ) from None
 
         return value

@@ -8,14 +8,14 @@ class ErrorWrapper:
         Wrapper class for handling errors in the mongotoy library.
 
         Args:
-            loc (str): The location where the error occurred.
             error (Exception): The wrapped error instance.
+            loc (str): The location where the error occurred.
 
         Raises:
             TypeError: If `loc` is not a tuple of strings.
         """
 
-    def __init__(self, loc: tuple[str], error: Union[Exception, 'ErrorWrapper']):
+    def __init__(self, error: Union[Exception, 'ErrorWrapper'], loc: tuple[str] = tuple()):
         self._loc, self._error = self._unwrap_error(loc, error)
 
     def _unwrap_error(self, loc: tuple[str], error: Exception) -> tuple[tuple[str], Exception]:
@@ -63,12 +63,12 @@ class ErrorWrapper:
         """
         return f'{".".join(self.loc)} -> {str(self.error)}'
 
-    def dump_dict(self) -> dict:
+    def dump_json(self) -> dict:
         """
-        Convert the error information to a dictionary.
+        Convert the error information to a valid json.
 
         Returns:
-            dict: A dictionary containing the location and string representation of the error.
+            dict: A json valid containing the location and string representation of the error.
         """
         return {
             'type': self.error.__class__.__name__,
@@ -83,13 +83,13 @@ class ValidationError(Exception):
         Exception class to represent data validation errors in the mongotoy library.
 
         Args:
-            errors (list[ErrorWrapper]): List of ErrorWrapper instances containing details of validation errors.
+            *errors (ErrorWrapper): List of ErrorWrapper instances containing details of validation errors.
 
         Raises:
             TypeError: If `errors` is not a list of ErrorWrapper instances.
         """
 
-    def __init__(self, errors: list[ErrorWrapper]):
+    def __init__(self, *errors: ErrorWrapper):
         if not all(isinstance(e, ErrorWrapper) for e in errors):
             raise TypeError("Errors must be a list of ErrorWrapper instances.")
 
@@ -116,18 +116,18 @@ class ValidationError(Exception):
         Returns:
             list[ErrorWrapper]: List of ErrorWrapper instances representing validation errors.
         """
-        return self._errors
+        return list(self._errors)
 
-    def dump_dict(self) -> dict:
+    def dump_json(self) -> dict:
         """
-        Convert the validation error information to a dictionary.
+        Convert the validation error information to a valid json.
 
         Returns:
-            dict: A dictionary containing the details of validation errors.
+            dict: A json valid containing the details of validation errors.
         """
         return {
             'type': 'ValidationError',
-            'errors': [e.dump_dict() for e in self.errors]
+            'errors': [e.dump_json() for e in self.errors]
         }
 
 
@@ -143,7 +143,7 @@ class DocumentValidationError(ValidationError):
 
     def __init__(self, document_cls: typing.Type, errors: list[ErrorWrapper]):
         self._document_cls = document_cls
-        super().__init__(errors)
+        super().__init__(*errors)
 
     def _get_message(self) -> str:
         """
@@ -154,20 +154,20 @@ class DocumentValidationError(ValidationError):
         """
         msg = f'Invalid data at:'
         for err in self.errors:
-            msg += f'\n  * {ErrorWrapper(loc=(self._document_cls.__name__,), error=err).get_message()}'
+            msg += f'\n  * {ErrorWrapper(error=err, loc=(self._document_cls.__name__,)).get_message()}'
         return msg
 
-    def dump_dict(self) -> dict:
+    def dump_json(self) -> dict:
         """
-        Convert the document validation error information to a dictionary.
+        Convert the document validation error information to a valid json.
 
         Returns:
-            dict: A dictionary containing the details of document validation errors.
+            dict: A json valid containing the details of document validation errors.
         """
         return {
             'type': 'DocumentValidationError',
             'document': self._document_cls.__name__,
-            'errors': super().dump_dict()['errors']
+            'errors': super().dump_json()['errors']
         }
 
 
