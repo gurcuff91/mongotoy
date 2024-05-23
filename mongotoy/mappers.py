@@ -1257,13 +1257,13 @@ class ConstrainedStrMapper(StrMapper):
         return str(value)
 
 
-class IpV4Mapper(ConstrainedStrMapper, bind=types.IpV4):
+class IpV4Mapper(ConstrainedStrMapper, bind=types.IPv4):
     """
     Mapper for handling IPv4 addresses.
     """
 
 
-class IpV6Mapper(ConstrainedStrMapper, bind=types.IpV6):
+class IpV6Mapper(ConstrainedStrMapper, bind=types.IPv6):
     """
     Mapper for handling IPv6 addresses.
     """
@@ -1293,7 +1293,7 @@ class EmailMapper(ConstrainedStrMapper, bind=types.Email):
     """
 
 
-class CardMapper(ConstrainedStrMapper, bind=types.Card):
+class CardMapper(ConstrainedStrMapper, bind=types.CardNumber):
     """
     Mapper for handling card numbers.
     """

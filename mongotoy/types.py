@@ -17,7 +17,7 @@ from mongotoy.geodata import Polygon as _Polygon
 from mongotoy.geodata import MultiPolygon as _MultiPolygon
 
 
-class IpV4(collections.UserString):
+class IPv4(collections.UserString):
     """
     Represents an IPv4 address.
 
@@ -38,7 +38,7 @@ class IpV4(collections.UserString):
         super().__init__(value)
 
 
-class IpV6(collections.UserString):
+class IPv6(collections.UserString):
     """
     Represents an IPv6 address.
 
@@ -155,7 +155,7 @@ class Email(collections.UserString):
         super().__init__(value)
 
 
-class Card(collections.UserString):
+class CardNumber(collections.UserString):
     """
     Represents a credit card number.
 

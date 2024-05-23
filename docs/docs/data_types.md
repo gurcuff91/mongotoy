@@ -41,13 +41,13 @@ tailored to specific use cases.
 
 #### Custom types
 
-- `mogotoy.types.IpV4`: Represents an IPv4 address.
-- `mogotoy.types.IpV6`: Represents an IPv6 address.
+- `mogotoy.types.IPv4`: Represents an IPv4 address.
+- `mogotoy.types.IPv6`: Represents an IPv6 address.
 - `mogotoy.types.Port`: Represents a port number.
 - `mogotoy.types.Mac`: Represents a MAC address.
 - `mogotoy.types.Phone`: Represents a phone number.
 - `mogotoy.types.Email`: Represents an email address.
-- `mogotoy.types.Card`: Represents a credit card number.
+- `mogotoy.types.CardNumber`: Represents a credit card number.
 - `mogotoy.types.Ssn`: Represents a Social Security Number (SSN).
 - `mogotoy.types.Hashtag`: Represents a hashtag.
 - `mogotoy.types.Doi`: Represents a Digital Object Identifier (DOI).

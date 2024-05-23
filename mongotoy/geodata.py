@@ -2,25 +2,38 @@ import typing
 
 
 class Geometry:
+    """ Base class to define a GeoJSON Geometry"""
 
     @property
     def type(self) -> str:
+        """
+        Get the type of geometry.
+
+        Returns:
+            str: The type of geometry.
+        """
         return self.__class__.__name__
 
+    # noinspection PyTypeChecker
     @property
     def coordinates(self) -> list:
-        # noinspection PyTypeChecker
+        """
+        Get the coordinates of the geometry.
+
+        Returns:
+            list: The coordinates of the geometry.
+        """
+        # Using list() to ensure a copy is returned.
         return list(self)
 
     def dump_json(self) -> dict:
         """
-        Dump the value to valid GeoJSON.
+        Dump the geometry to valid GeoJSON.
 
         Returns:
-            dict: The dumped value.
-
+            dict: The GeoJSON representation of the geometry.
         """
-        return dict(type=self.type, coordinates=self.coordinates)
+        return {"type": self.type, "coordinates": self.coordinates}
 
 
 def parse_geojson(geojson: dict, parser: typing.Type[Geometry]) -> Geometry:
