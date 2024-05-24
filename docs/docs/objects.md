@@ -40,7 +40,7 @@ See [querying expressions](#querying-expressions)
 async with engine.session() as session:
     
     # Get persons older than 21 years
-    legal_persons = session.objects(Person).filter(Person.age > 21)
+    older_persons = session.objects(Person).filter(Person.age > 21)
     
     # Get persons from USA
     usa_persons = session.objects(Person).filter(address__country__eq='USA')
@@ -138,9 +138,6 @@ instance. Raise `mongotoy.errors.NoResultError()` if no result found.
 - **one_or_none()**: Retrieves a specific document from the result set. It returns a single-parsed document
 instance or `None` if no result found.
 
-- **get_by_id(value)**: Retrieves a document by its identifier from the result set. It returns a parsed 
-document instance corresponding to the provided identifier.
-
 These functions contribute to efficient data retrieval and manipulation by leveraging asynchronous or synchronous
 operations, ensuring responsiveness and scalability in handling database queries.
 
@@ -152,9 +149,6 @@ async with engine.session() as session:
 
     # Fetching one person
     person = await session.objects(Person).one()
-
-    # Fetching one person by id
-    person = await session.objects(Person).get_by_id(1)
 ````
 
 ### Counting documents
@@ -281,6 +275,7 @@ Query.Gt('age', 21)
 To ensure accurate querying expressions, use the `alias` rather than the field `name` for fields with defined aliases. 
 Otherwise, querying operations might target nonexistent database fields, resulting in inaccuracies.
 ///
+///
 
 ### The Q function
 
@@ -293,9 +288,9 @@ The function parses each keyword, separating the field name from the operator, w
 dynamically constructs a query by combining these conditions using logical `AND` operations. This allows users to build
 queries in a more readable and intuitive way, compared to manually constructing query strings.
 
-The `Q` function is particularly useful in scenarios where the query parameters are not known in advance and need to be constructed at 
-runtime based on user input or other dynamic data sources. It encapsulates the complexity of query construction, 
-providing a clean and maintainable interface for building queries.
+The `Q` function is particularly useful in scenarios where the query parameters are not known in advance and need to be
+constructed at runtime based on user input or other dynamic data sources. It encapsulates the complexity of query 
+construction, providing a clean and maintainable interface for building queries.
 
 ````python
 from mongotoy.expressions import Q

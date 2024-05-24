@@ -96,8 +96,9 @@ the database. To specify settings, you use the `document_config` class attribute
 from mongotoy import Document
 from mongotoy.documents import DocumentConfig
 
+
 class Person(Document):
-    document_config = DocumentConfig(capped=True)
+    document_config = DocumentConfig(capped_collection=True)
 ````
 
 

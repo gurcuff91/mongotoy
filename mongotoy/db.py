@@ -12,6 +12,7 @@ import pymongo
 from motor.core import AgnosticClient, AgnosticDatabase, AgnosticCollection, AgnosticClientSession
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket, AsyncIOMotorGridOut
 from motor.motor_gridfs import AgnosticGridFSBucket
+from pymongo.collation import Collation
 from pymongo.read_concern import ReadConcern
 
 from mongotoy import documents, expressions, references, fields, types, sync
@@ -203,8 +204,14 @@ class Engine:
         """
         indexes = self._get_document_indexes(document_cls)
         collection = self._get_document_collection(document_cls)
+
         if indexes:
-            await collection.create_indexes(indexes, session=driver_session)
+            options = {}
+            # Add collation to the index
+            if document_cls.document_config.collation:
+                options['collation'] = document_cls.document_config.collation
+
+            await collection.create_indexes(indexes, session=driver_session, **options)
 
     async def _create_document_collection(
         self,
@@ -221,25 +228,39 @@ class Engine:
         config = document_cls.document_config
         options = {'check_exists': False}
 
-        # Configure options for capped collections
-        if config.capped:
+        # Configure options for capped collection
+        if config.capped_collection:
             options['capped'] = True
-            options['size'] = config.capped_size
-            if config.capped_max:
-                options['max'] = config.capped_max
+            options['size'] = config.capped_collection_size
+            if config.capped_collection_max:
+                options['max'] = config.capped_collection_max
 
-        # Configure options for timeseries collections
+        # Configure options for timeseries collection
         if config.timeseries_field:
             timeseries = {
-                'timeField': config.timeseries_field,
-                'granularity': config.timeseries_granularity
+                'timeField': documents.get_document_field(
+                    document_cls,
+                    field_name=config.timeseries_field
+                ).alias,
+                'granularity': config.timeseries_granularity or 'seconds'
             }
             if config.timeseries_meta_field:
-                timeseries['metaField'] = config.timeseries_meta_field
+                timeseries['metaField'] = documents.get_document_field(
+                    document_cls,
+                    field_name=config.timeseries_meta_field
+                ).alias
 
             options['timeseries'] = timeseries
             if config.timeseries_expire_after_seconds:
                 options['expireAfterSeconds'] = config.timeseries_expire_after_seconds
+
+        # Add collation to options
+        if config.collation:
+            options['collation'] = config.collation
+
+        # Add extra options to a collection
+        if config.extra_collection_options:
+            options.update(config.extra_collection_options)
 
         # Create the collection with configured options
         await self.database.create_collection(
@@ -721,18 +742,29 @@ class Session(typing.AsyncContextManager, typing.ContextManager):
         """
         return Transaction(session=self)
 
-    def objects(self, document_cls: typing.Type[T], dereference_deep: int = 0) -> 'Objects[T]':
+    def objects(
+        self,
+        document_cls: typing.Type[T],
+        dereference_deep: int = 0,
+        collation: typing.Optional[Collation] = None
+    ) -> 'Objects[T]':
         """
         Returns an object manager for the specified document class.
 
         Args:
             document_cls (typing.Type[T]): The document class.
             dereference_deep (int): Depth of dereferencing.
+            collation (Collation, optional): The collation to use when query documents.
 
         Returns:
             Objects[T]: An object manager.
         """
-        return Objects(document_cls, session=self, dereference_deep=dereference_deep)
+        return Objects(
+            document_cls,
+            session=self,
+            dereference_deep=dereference_deep,
+            collation=collation
+        )
 
     def fs(self, chunk_size_bytes: int = gridfs.DEFAULT_CHUNK_SIZE) -> 'FsBucket':
         """
@@ -896,12 +928,21 @@ class Objects(typing.Generic[T]):
             document_cls (typing.Type[T]): The document class associated with the query set.
             session (Session): The session object used for database operations.
             dereference_deep (int, optional): The depth of dereferencing for referenced documents.
+            collation (Collation, optional): The collation to use when query documents.
+
         """
 
-    def __init__(self, document_cls: typing.Type[T], session: Session, dereference_deep: int = 0):
+    def __init__(
+        self,
+        document_cls: typing.Type[T],
+        session: Session,
+        dereference_deep: int = 0,
+        collation: typing.Optional[Collation] = None
+    ):
         self._document_cls = document_cls
         self._session = session
         self._dereference_deep = dereference_deep
+        self._collation = collation
         self._collection = session.engine.collection(document_cls)
         self._filter = expressions.Query()
         self._sort = expressions.Sort()
@@ -921,7 +962,8 @@ class Objects(typing.Generic[T]):
         objs = Objects(
             document_cls=self._document_cls,
             session=self._session,
-            dereference_deep=self._dereference_deep
+            dereference_deep=self._dereference_deep,
+            collation=self._collation
         )
         setattr(objs, '_filter', options.get('_filter', self._filter))
         setattr(objs, '_sort', options.get('_sort', self._sort))
@@ -937,12 +979,14 @@ class Objects(typing.Generic[T]):
         Yields:
             T: The parsed document instances.
         """
+        # Create pipeline
         # noinspection PyTypeChecker
         pipeline = references.build_dereference_pipeline(
             references=self._document_cls.__references__.values(),
             deep=self._dereference_deep
         )
 
+        # Apply filters, sorting and limits
         if self._filter:
             pipeline.append({'$match': self._filter})
         if self._sort:
@@ -952,7 +996,15 @@ class Objects(typing.Generic[T]):
         if self._limit > 0:
             pipeline.append({'$limit': self._limit})
 
-        cursor = self._collection.aggregate(pipeline, session=self._session.driver_session)
+        # Aggregation query options
+        options = {}
+
+        # Add collation to aggregation query
+        collation = self._collation or self._document_cls.document_config.collation
+        if collation:
+            options['collation'] = collation
+
+        cursor = self._collection.aggregate(pipeline, session=self._session.driver_session, **options)
         async for data in cursor:
             yield self._document_cls(**data)
 
@@ -1001,25 +1053,6 @@ class Objects(typing.Generic[T]):
             return await self._one()
         except NoResultError:
             pass
-
-    # noinspection PyShadowingBuiltins
-    async def _get_by_id(self, id_value: typing.Any) -> T:
-        """
-        Retrieves a document by its identifier.
-
-        Args:
-            id_value (typing.Any): The identifier value.
-
-        Returns:
-            T: The parsed document instance.
-
-        Raises:
-            NoResultsError: If no results are found.
-        """
-        # noinspection PyProtectedMember
-        return await self.filter(
-            self._document_cls.id == self._document_cls.id._field.mapper.validate_value(id_value)
-        )._one()
 
     async def _count(self) -> int:
         """
@@ -1103,10 +1136,6 @@ class Objects(typing.Generic[T]):
         return self._one_or_none()
 
     @sync.proxy
-    def get_by_id(self, value: typing.Any) -> typing.Coroutine[typing.Any, typing.Any, T] | T:
-        return self._get_by_id(value)
-
-    @sync.proxy
     def count(self) -> typing.Coroutine[typing.Any, typing.Any, int] | int:
         return self._count()
 
@@ -1177,7 +1206,7 @@ class FsBucket(Objects['FsObject']):
             session=self._session.driver_session
         )
         # Update obj info
-        obj = await self._get_by_id(obj.id)
+        obj = await self.filter(FsObject.id == obj.id)._one()
 
         return obj
 

@@ -157,6 +157,10 @@ class Field:
         return self._mapper
 
     @property
+    def options(self) -> FieldOptions:
+        return self._options
+
+    @property
     def name(self) -> str:
         """
         Get the name of the field.

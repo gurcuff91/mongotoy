@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import bson
 import pymongo
+from pymongo.collation import Collation
 from pymongo.read_concern import ReadConcern
 
 from mongotoy import cache, expressions, references, fields, mappers
@@ -75,10 +76,13 @@ class BaseDocumentMeta(abc.ABCMeta):
 
         # Update namespace with fields
         namespace.update(_fields)
+
         # Build class
         _cls = super().__new__(mcls, name, bases, namespace)
+
         # Set cls fields
         _cls.__fields__ = _fields
+
         # Register class
         cache.documents.add_type(name, _cls)
 
@@ -242,6 +246,7 @@ class EmbeddedDocument(BaseDocument):
 
     This class serves as a base for defining embedded documents within other documents. It inherits functionality
     from the BaseDocument class.
+
     """
 
 
@@ -255,34 +260,60 @@ class DocumentConfig:
 
     Attributes:
         indexes (list[pymongo.IndexModel]): List of index models for the document.
-        capped (bool): Indicates if the collection is capped (default is False).
-        capped_size (int): The maximum size of the capped collection in bytes (default is 16 MB).
-        capped_max (int): The maximum number of documents allowed in a capped collection (default is None).
         timeseries_field (str): The field name to use as the time field for timeseries collections (default is None).
         timeseries_meta_field (str): The field name for metadata in timeseries collections (default is None).
         timeseries_granularity (Literal['seconds', 'minutes', 'hours']): The granularity of time intervals.
-        timeseries_expire_after_seconds (int): The expiration time for documents in a timeseries collection, in seconds.
+        timeseries_expire_after_seconds (int): The expiration time for documents in a timeseries collection, in seconds
+        capped_collection (bool): Indicates if the collection is capped (default is False).
+        capped_collection_size (int): The maximum size of the capped collection in bytes (default is 16 MB).
+        capped_collection_max (int): The maximum number of documents allowed in a capped collection (default is None).
+        collation (Collation): The collation to use in a document collection (default is None).
+        extra_collection_options (dict): Extra options for the document collection (default is an empty dictionary).
         codec_options (bson.CodecOptions): The BSON codec options (default is None).
         read_preference (pymongo.ReadPreference): The read preference for the document (default is None).
         read_concern (ReadConcern): The read concern for the document (default is None).
         write_concern (pymongo.WriteConcern): The written concern for the document (default is None).
-        extra_options (dict): Extra options for the document configuration (default is an empty dictionary).
 
     """
 
-    indexes: list[pymongo.IndexModel] = dataclasses.field(default_factory=lambda: list())
-    capped: bool = dataclasses.field(default=False)
-    capped_size: int = dataclasses.field(default=16 * (2 ** 20))  # 16 Mb
-    capped_max: int = dataclasses.field(default=None)
+    indexes: list[pymongo.IndexModel] = dataclasses.field(default_factory=list)
     timeseries_field: str = dataclasses.field(default=None)
     timeseries_meta_field: str = dataclasses.field(default=None)
-    timeseries_granularity: Literal['seconds', 'minutes', 'hours'] = dataclasses.field(default='seconds')
+    timeseries_granularity: Literal['seconds', 'minutes', 'hours'] = dataclasses.field(default=None)
     timeseries_expire_after_seconds: int = dataclasses.field(default=None)
+    capped_collection: bool = dataclasses.field(default=False)
+    capped_collection_size: int = dataclasses.field(default=16 * (2 ** 20))  # 16 Mb
+    capped_collection_max: int = dataclasses.field(default=None)
+    collation: Collation = dataclasses.field(default=None)
+    extra_collection_options: dict = dataclasses.field(default_factory=dict)
     codec_options: bson.CodecOptions = dataclasses.field(default=None)
     read_preference: pymongo.ReadPreference = dataclasses.field(default=None)
     read_concern: ReadConcern = dataclasses.field(default=None)
     write_concern: pymongo.WriteConcern = dataclasses.field(default=None)
-    extra_options: dict = dataclasses.field(default_factory=lambda: dict())
+
+    def merge(self, new_config: 'DocumentConfig'):
+        """
+        Merge the current document configuration with a new configuration.
+
+        This function updates the current configuration with values from the new configuration,
+        prioritizing the values from the current configuration if they are defined.
+
+        Args:
+            new_config (DocumentConfig): The new configuration to merge.
+
+        """
+        # Merge indexes
+        self.indexes.extend(new_config.indexes)
+
+        # Merge timeseries fields
+        self.timeseries_field = self.timeseries_field or new_config.timeseries_field
+        self.timeseries_meta_field = self.timeseries_meta_field or new_config.timeseries_meta_field
+
+        # Merge timeseries settings
+        self.timeseries_granularity = self.timeseries_granularity or new_config.timeseries_granularity
+        self.timeseries_expire_after_seconds = (
+            self.timeseries_expire_after_seconds or new_config.timeseries_expire_after_seconds
+        )
 
 
 class DocumentMeta(BaseDocumentMeta):
@@ -310,12 +341,12 @@ class DocumentMeta(BaseDocumentMeta):
         """
         _cls = super().__new__(mcls, name, bases, namespace)
 
+        # Process document fields
         _id_field = None
         _references = OrderedDict()
         for field in _cls.__fields__.values():
             # Check id field
-            # noinspection PyProtectedMember
-            if field._options.id_field:
+            if field.options.id_field:
                 _id_field = field
 
             # Unwrap SequenceMapper
@@ -327,15 +358,15 @@ class DocumentMeta(BaseDocumentMeta):
 
             # Add references
             if isinstance(_mapper, mappers.ReferencedDocumentMapper):
-                # noinspection PyProtectedMember,PyUnresolvedReferences
                 _references[field.name] = references.Reference(
-                    document_cls=_mapper._document_cls,
-                    ref_field=_mapper._options.ref_field,
-                    key_name=_mapper._options.key_name or f'{field.alias}_{_mapper._options.ref_field}',
+                    document_cls=getattr(_mapper, '_document_cls'),
+                    ref_field=_mapper.options.ref_field,
+                    key_name=_mapper.options.key_name or f'{field.alias}_{_mapper.options.ref_field}',
                     is_many=_is_many,
                     name=field.alias
                 )
 
+        # Create id field if not exist
         if not _id_field:
             _options = fields.FieldOptions(
                 id_field=True,
@@ -347,12 +378,23 @@ class DocumentMeta(BaseDocumentMeta):
             )
             _id_field.__set_name__(_cls, 'id')
 
-        # Set class props
+        # Merge base configs
+        _base_config = DocumentConfig()
+        for base in bases:
+            _config = getattr(base, 'document_config', None)
+            if _config:
+                _base_config.merge(_config)
+
+        # Get Document config from namespace and merge with base config
+        _doc_config = namespace.get('document_config', DocumentConfig())
+        _doc_config.merge(_base_config)
+
+        # Set Document class properties
+        _cls.id = _id_field
+        _cls.document_config = _doc_config
+        _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
         _cls.__fields__['id'] = _id_field
         _cls.__references__ = _references
-        _cls.__collection_name__ = namespace.get('__collection_name__', f'{name.lower()}s')
-        _cls.id = _id_field
-        _cls.document_config = namespace.get('document_config', DocumentConfig())
 
         return _cls
 
