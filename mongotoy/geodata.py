@@ -33,7 +33,8 @@ class Geometry:
         Returns:
             dict: The GeoJSON representation of the geometry.
         """
-        return {"type": self.type, "coordinates": self.coordinates}
+        extra = getattr(self, '__geo_extra__', {})
+        return {"type": self.type, "coordinates": self.coordinates, **extra}
 
 
 def parse_geojson(geojson: dict, parser: typing.Type[Geometry]) -> Geometry:
@@ -101,10 +102,11 @@ class Point(Position, Geometry):
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.2
     """
 
-    def __init__(self, *coordinates: int | float):
+    def __init__(self, *coordinates: int | float, **kwargs):
         if len(coordinates) != 2:
             raise TypeError(f'The Point must represent single position, i.e. [lat, long]')
         super().__init__(*coordinates)
+        self.__geo_extra__ = kwargs
 
 
 class MultiPoint(list[Point], Geometry):
@@ -115,8 +117,9 @@ class MultiPoint(list[Point], Geometry):
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.3
     """
 
-    def __init__(self, *points: Point):
+    def __init__(self, *points: Point, **kwargs):
         super().__init__([Point(*i) for i in points])
+        self.__geo_extra__ = kwargs
 
 
 class LineString(list[Point], Geometry):
@@ -127,10 +130,11 @@ class LineString(list[Point], Geometry):
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.4
     """
 
-    def __init__(self, *points: Point):
+    def __init__(self, *points: Point, **kwargs):
         if not len(points) >= 2:
             raise TypeError('The LineString must be an array of two or more Points')
         super().__init__([Point(*i) for i in points])
+        self.__geo_extra__ = kwargs
 
 
 class MultiLineString(list[LineString], Geometry):
@@ -141,8 +145,9 @@ class MultiLineString(list[LineString], Geometry):
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.5
     """
 
-    def __init__(self, *lines: LineString):
+    def __init__(self, *lines: LineString, **kwargs):
         super().__init__([LineString(*i) for i in lines])
+        self.__geo_extra__ = kwargs
 
 
 class Polygon(list[LineString], Geometry):
@@ -150,8 +155,9 @@ class Polygon(list[LineString], Geometry):
     https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6
     """
 
-    def __init__(self, *rings: LineString):
+    def __init__(self, *rings: LineString, **kwargs):
         super().__init__([LinearRing(*i) for i in rings])
+        self.__geo_extra__ = kwargs
 
 
 class MultiPolygon(list[Polygon], Geometry):
@@ -162,5 +168,6 @@ class MultiPolygon(list[Polygon], Geometry):
      https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.7
     """
 
-    def __init__(self, *polygons: Polygon):
+    def __init__(self, *polygons: Polygon, **kwargs):
         super().__init__([Polygon(*i) for i in polygons])
+        self.__geo_extra__ = kwargs

@@ -1,7 +1,10 @@
 import re
+import typing
 from typing import Literal
 
 import pymongo
+
+from mongotoy import geodata
 
 EmptyValue = type('EmptyValue', (), {})()
 IndexType = Literal[-1, 1, '2d', '2dsphere', 'hashed', 'text']
@@ -257,6 +260,90 @@ class Query(dict[str, list | dict]):
             Query: The regex query expression.
         """
         return cls({str(field): {'$regex': value}})
+
+    @classmethod
+    def Intersects(cls, field, value: geodata.Geometry) -> 'Query':
+        """
+        Creates a geo intersects query expression.
+
+        Selects documents whose geospatial data intersects with a specified GeoJSON object;
+        i.e. where the intersection of the data and the specified object is non-empty.
+
+        Args:
+            field: The field name.
+            value (geodata.Geometry): The geometry.
+
+        Returns:
+            Query: The geo intersects query expression.
+        """
+        return cls({
+            str(field): {
+                '$geoIntersects': {
+                    '$geometry': value.dump_json()
+                }
+            }
+        })
+
+    @classmethod
+    def Within(cls, field, value: geodata.Polygon | geodata.MultiPolygon) -> 'Query':
+        """
+        Creates a geo within query expression.
+
+        Selects documents with geospatial data that exists entirely within a specified shape.
+
+        Args:
+            field: The field name.
+            value (geodata.Polygon | geodata.MultiPolygon): The polygon or multipolygon geometry.
+
+        Returns:
+            Query: The geo within query expression.
+        """
+        return cls({
+            str(field): {
+                '$geoWithin': {
+                    '$geometry': value.dump_json()
+                }
+            }
+        })
+
+    @classmethod
+    def Near(
+        cls,
+        field,
+        value: geodata.Point,
+        max_distance: typing.Optional[int] = None,
+        min_distance: typing.Optional[int] = None,
+        as_near_sphere: bool = False
+    ) -> 'Query':
+        """
+        Creates a geo near query expression.
+
+        Specifies a point for which a geospatial query returns the documents from nearest to farthest
+
+        Args:
+            field: The field name.
+            value (geodata.Point): The center point geometry.
+            max_distance (int, Optional): Max distance (in meters) from the center point.
+            min_distance (int, Optional): Min distance (in meters) from the center point.
+            as_near_sphere (bool): Calculates distances using spherical geometry.
+
+        Returns:
+            Query: The geo near query expression.
+        """
+        near_op = '$nearSphere' if as_near_sphere else '$near'
+        near_exp = {
+            '$geometry': value.dump_json()
+        }
+        if max_distance:
+            near_exp['$maxDistance'] = max_distance
+        if min_distance:
+            near_exp['$minDistance'] = min_distance
+
+        return cls({
+            str(field): {
+                near_op: near_exp
+            }
+        })
 
 
 # noinspection PyPep8Naming

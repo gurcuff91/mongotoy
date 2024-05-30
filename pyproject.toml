@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mongotoy"
-version = "0.1.6"
+version = "0.1.7"
 description = "Comprehensive ODM for MongoDB"
 license = "Apache-2.0"
 authors = ["gurcuff91 <gf.meneses91@gmail.com>"]

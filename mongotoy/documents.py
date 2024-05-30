@@ -47,26 +47,23 @@ class BaseDocumentMeta(abc.ABCMeta):
             _fields.update(getattr(base, '__fields__', {}))
 
         # Add class namespace declared fields
-        for field_name, anno_type in namespace.get('__annotations__', {}).items():
-            options = namespace.get(field_name, fields.FieldOptions())
+        for field_name, annotated_type in namespace.get('__annotations__', {}).items():
+            options = namespace.get(field_name, expressions.EmptyValue)
             if not isinstance(options, fields.FieldOptions):
-                # noinspection PyTypeChecker,SpellCheckingInspection
-                raise DocumentError(
-                    loc=(name, field_name),
-                    msg=f'Invalid field descriptor {type(options)}. '
-                        f'Use mongotoy.field() or mongotoy.reference() descriptors'
-                )
+                options = fields.FieldOptions(default=options)
+
             try:
                 _fields[field_name] = fields.Field(
-                    mapper=mappers.build_mapper(anno_type, options=options),
+                    mapper=mappers.build_mapper(annotated_type, options=options),
                     options=options
                 )
             except TypeError as e:
                 # noinspection PyTypeChecker
                 raise DocumentError(
                     loc=(name, field_name),
-                    msg=f'Invalid field annotation {anno_type}. {str(e)}'
+                    msg=f'Invalid field annotation {annotated_type}. {str(e)}'
                 ) from None
+
             except Exception as e:
                 # noinspection PyTypeChecker
                 raise DocumentError(

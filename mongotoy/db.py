@@ -156,7 +156,7 @@ class Engine:
                 (
                     mappers.MultiPointMapper,
                     mappers.MultiLineStringMapper,
-                    mappers.PolygonMapper,
+                    mappers.MultiPolygonMapper,
                 )
             ):
                 indexes.append(
